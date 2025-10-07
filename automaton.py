@@ -3,42 +3,30 @@ from abc import ABC, abstractmethod
 
 CONSTANT_KEY = 1
 
-class State:
-    def __init__(self, name):
-        self.name = name
-        
-    def rename(self, new_name):
-        self.name = new_name
-        
-    def __str__(self):
-        return str(self.name)
-    
-    def __eq__(self, value):
-        if not isinstance(value, State):
-            return False
-        return self.name == value.name
 
 class Automaton(ABC):
     """Represents the abstract notion of an automaton.
     """
-    def __init__(self, states: set[State], transition_matrix: dict, initial: set, final: set):
+    def __init__(self, states: set[str], transition_matrix: dict[tuple], initial: set, final: set):
         self.states = states
         self.transition_matrix = transition_matrix
         self.initial = initial
         self.final = final
 
     def __str__(self):
-        return f"States: {self.states}, Transition matrix: {self.transition_matrix}, Initial: {self.initial}, Final: {self.final}"
-    
+        return f"States: {self.states}, Transition matrix: {self.transition_matrix}, Initial: {self.initial}, Final: {self.final}"   
+        
+                    
 class DFA(Automaton):
-    """A DFA (deterministic finite automaton). Instantiation of Automaton.
     """
-    def __init__(self, states, transition_matrix:dict[str, list[tuple[State, State]]], initial: set[State], final:set[State]):
+        A DFA (deterministic finite automaton). Instantiation of Automaton.
+    """
+    def __init__(self, states, transition_matrix:dict[str, list[tuple[str, str]]], initial: set[str], final:set[str]):
         super().__init__(states, transition_matrix, initial, final)
     
 
 class PGA(Automaton):
-    def __init__(self, states, transition_matrix: dict[str, list[tuple[float, State, State]]], initial: set[tuple[float,State]], final: set[tuple[float,State]]):
+    def __init__(self, states, transition_matrix: dict[str, list[tuple[float, str, str]]], initial: set[tuple[float,str]], final: set[tuple[float,str]]):
         return super().__init__(states, transition_matrix, initial, final)
     
     def substitute(self, indeterminate, value: int) -> "PGA":
@@ -73,12 +61,16 @@ class PGA(Automaton):
         """
         print(f"Concatenating {self}, {other}")
         if not self.states.isdisjoint(other.states):
-            other = fix_name_conflict(self, other)
-            # todo rename
+            other = resolve_conflict(self, other)
+        print(other)
         new_transition_matrix = self.transition_matrix
         new_transition_matrix[CONSTANT_KEY].extend(
             [(1, from_state, to_state) for ((_, from_state), (_,to_state)) in set(itertools.product(self.final, other.initial))]
         )
+        for k in new_transition_matrix.keys():
+            print(f"Symbol {k}")
+            print(new_transition_matrix[k], other.transition_matrix[k])
+            new_transition_matrix[k] = new_transition_matrix[k] + other.transition_matrix[k]
         return PGA(
             self.states | other.states,
             new_transition_matrix,
@@ -122,14 +114,16 @@ class PGA(Automaton):
             PGA: The filtered PGA A x B_\phi.
         """
         if not self.states.isdisjoint(other.states):
-            pass # todo rename
+            other = resolve_conflict(self, other)
         new_states = {f"({q1,q2})" for q1 in self.states for q2 in other.states}
         new_transition_matrix = dict()
+        print(f"Self: {self.transition_matrix}, Other: {other.transition_matrix}")
         for v in self.transition_matrix.keys():
-            print(v, self.transition_matrix[v], other.transition_matrix[v])
-            new_transition_matrix[v] = [(c, f"({state1},{state2})", f"({state3},{state4})") for (c, state1, state3) in self.transition_matrix[v] for (state2, state4) in other.transition_matrix[v]] 
+            print(f"Symbol {v}")
+            s_trans = self.transition_matrix[v]
+            o_trans = other.transition_matrix[v]
+            new_transition_matrix[v] = [(c, f"({state1},{state2})", f"({state3},{state4})") for (c, state1, state3) in s_trans for (state2, state4) in o_trans] 
             print(new_transition_matrix[v])
-        print(self.initial)
         new_initial = set((c, f"({state1},{state2})") for (c,state1) in self.initial for state2 in other.initial)
         new_final = set((c, f"({state1},{state2})") for (c,state1) in self.final for state2 in other.final)
         
@@ -170,11 +164,44 @@ class PGA(Automaton):
             self.final
         )
     
-def fix_name_conflict(aut1: Automaton, aut2: Automaton) -> tuple[Automaton, Automaton]:
-    # TODO sensible name conflict resolution
-    violating_states = aut1.states.intersection(aut2.states)
-    for state in violating_states:
-        s = aut2.states.intersection(state).pop()
-        s.rename(state.name + "_1")
+def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
+    suffix = "_1"
+    while any((s + suffix) in a1.states for s in a2.states):
+        suffix += "_"
     
-    return (aut1, aut2)
+    rename_map = {s: s + suffix for s in a2.states}
+    
+    def rename_set(S):
+        # could contain just states or (weight, state)
+        renamed = set()
+        for elem in S:
+            if isinstance(elem, tuple) and len(elem) == 2 and not isinstance(elem[0], str):
+                # likely (weight, state)
+                w, s = elem
+                renamed.add((w, rename_map.get(s,s)))
+            else:
+                # plain state
+                renamed.add(rename_map.get(elem, elem))
+        return renamed
+    
+    new_transition_matrix = {}
+    for indeterminate, transitions in a2.transition_matrix.items():
+        new_entries = []
+        for entry in transitions:
+            new_entries = []
+            if len(entry) == 2:
+                # Unweighted case
+                s,t = entry
+                new_entries.append((rename_map.get(s,s), rename_map.get(t,t)))
+            elif len(entry) == 3:
+                weight, s, t = entry
+                new_entries.append((weight,rename_map.get(s,s), rename_map.get(t,t)))
+            else:
+                raise ValueError(f"Weird transition matrix entry {entry}")
+        new_transition_matrix[indeterminate] = new_entries    
+    return Automaton(
+        states=rename_set(a2.states),
+        transition_matrix=new_transition_matrix,
+        initial=rename_set(a2.initial),
+        final=rename_set(a2.final)
+    )

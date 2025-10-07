@@ -8,7 +8,8 @@ class Statement(ABC):
     @abstractmethod
     def apply_semantics(self, pga: PGA) -> PGA:
         pass
-
+    
+# Todo one assignment statement?
 class SetToZeroStatement(Statement):
     def __init__(self, indeterminate):
         self.indeterminate = indeterminate

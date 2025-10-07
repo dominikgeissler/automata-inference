@@ -8,6 +8,9 @@ class Distribution(ABC):
         pass
     
 class BinomialDistribution(Distribution):
+    """
+        Represents the binomial distribution.
+    """
     def __init__(self, indeterminate, p: float):
         assert 0 <= p and p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.indeterminate = indeterminate

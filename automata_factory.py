@@ -3,6 +3,8 @@ import itertools
 
 VARIABLES = {"X", "Y", "Z", 1}
 
+# TODO Remove hardcoded names
+
 class PGAFactory:
     def __init__(self, variables):
         self.variables = variables
