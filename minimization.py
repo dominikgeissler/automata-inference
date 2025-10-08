@@ -77,7 +77,7 @@ def remove_noncoaccessible_states(aut: Automaton):
     else:
         aut.initial = aut.initial & keep
         aut.final = aut.final & keep
-        
+
     print(aut)
     return aut
 

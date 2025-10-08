@@ -1,5 +1,13 @@
 from minimization import minimize
-from program_statements import SequentialCompositionStatement, IncrementConstantStatement, ObserveStatement, IfStatement, SetToZeroStatement, CoinflipStatement, IncrementDistributionStatement
+from program_statements import (
+    SequentialCompositionStatement,
+    IncrementConstantStatement,
+    ObserveStatement,
+    IfStatement,
+    SetToZeroStatement,
+    CoinflipStatement,
+    IncrementDistributionStatement,
+)
 from distributions import GeometricDistribution, NegBinomialDistribution
 from guards import LtGuard, EqGuard, GeqGuard
 from automata_factory import PGAFactory
@@ -10,9 +18,7 @@ from visualizer import visualize
 # X += Geom(0.5); observe(X < 3)
 program = SequentialCompositionStatement(
     lhs=IncrementDistributionStatement("X", GeometricDistribution("X", 0.5)),
-    rhs=ObserveStatement(
-        LtGuard("X", 10)
-    )
+    rhs=ObserveStatement(LtGuard("X", 10)),
 )
 
 # program = CoinflipStatement(
@@ -29,20 +35,21 @@ program = SequentialCompositionStatement(
         lhs=SetToZeroStatement("Y"),
         p=0.9,
         rhs=SequentialCompositionStatement(
-            lhs=SetToZeroStatement("Y"),
-            rhs=IncrementConstantStatement("Y", 1)
-        )
+            lhs=SetToZeroStatement("Y"), rhs=IncrementConstantStatement("Y", 1)
+        ),
     ),
     rhs=SequentialCompositionStatement(
         lhs=IfStatement(
             guard=EqGuard("Y", 0),
             then_statement=IncrementDistributionStatement(
-                "X", NegBinomialDistribution("X", 1, 0.5)),
+                "X", NegBinomialDistribution("X", 1, 0.5)
+            ),
             else_statement=IncrementDistributionStatement(
-                "X", NegBinomialDistribution("X", 2, 0.5))
+                "X", NegBinomialDistribution("X", 2, 0.5)
+            ),
         ),
-        rhs=ObserveStatement(guard=GeqGuard("X", 2))
-    )
+        rhs=ObserveStatement(guard=GeqGuard("X", 2)),
+    ),
 )
 
 
