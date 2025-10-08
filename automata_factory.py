@@ -75,7 +75,7 @@ class PGAFactory:
         assert 0 <= p and p <= 1, f"p has to be between 0 and 1, got {p=}"
 
         aut = PGAFactory.geometric(indeterminate, p)
-        for _ in range(n):
+        for _ in range(n-1):
             aut = aut.concat(PGAFactory.geometric(indeterminate, p))
 
         return aut

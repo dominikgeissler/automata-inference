@@ -1,4 +1,5 @@
 from automaton import Automaton, PGA
+from automata_factory import PGAFactory
 
 CONSTANT_KEY = 1
 
@@ -51,6 +52,8 @@ def remove_noncoaccessible_states(aut: Automaton):
             stack.extend(predecessors[curr])
 
     keep = reachable & coaccessible
+    if not keep:
+        return PGAFactory.zero()
 
     new_transition_matrix = dict()
     aut.states = keep
@@ -74,10 +77,13 @@ def remove_noncoaccessible_states(aut: Automaton):
     else:
         aut.initial = aut.initial & keep
         aut.final = aut.final & keep
+        
+    print(aut)
     return aut
 
 
 def merge_states(aut: PGA):
+    return aut
     if is_minimal(aut):
         return aut
     # todo implement

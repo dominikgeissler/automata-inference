@@ -1,7 +1,7 @@
 from minimization import minimize
 from program_statements import SequentialCompositionStatement, IncrementConstantStatement, ObserveStatement, IfStatement, SetToZeroStatement, CoinflipStatement, IncrementDistributionStatement
 from distributions import GeometricDistribution, NegBinomialDistribution
-from guards import LtGuard, EqGuard, NegGuard
+from guards import LtGuard, EqGuard, GeqGuard
 from automata_factory import PGAFactory
 from visualizer import visualize
 
@@ -41,7 +41,7 @@ program = SequentialCompositionStatement(
             else_statement=IncrementDistributionStatement(
                 "X", NegBinomialDistribution("X", 2, 0.5))
         ),
-        rhs=ObserveStatement(guard=NegGuard(LtGuard("X", 2)))
+        rhs=ObserveStatement(guard=GeqGuard("X", 2))
     )
 )
 
