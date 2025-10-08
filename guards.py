@@ -52,20 +52,6 @@ class ModGuard(Guard):
         
     def __str__(self):
         return f"{self.indeterminate} mod {self.modulus} = {self.residue}"
-    
-# ----------------- Syntactic Sugar ---------------
-class EqGuard(Guard):
-    def __init__(self, indeterminate, n):
-        self.indeterminate = indeterminate
-        self.n = n
-        
-    def to_dfa(self):
-        return DFAFactory.eq(self.indeterminate, self.n)
-    
-    def __str__(self):
-        return f"{self.indeterminate} = {self.n}"
-
-
 
 class NegGuard(Guard):
     """
@@ -105,3 +91,50 @@ class LandGuard(Guard):
     
     def __str__(self):
         return f"({self.guard1}) && ({self.guard2})"
+
+    
+# ----------------- Syntactic Sugar ---------------
+
+class EqGuard(Guard):
+    def __init__(self, indeterminate, n):
+        self.indeterminate = indeterminate
+        self.n = n
+        
+    def to_dfa(self):
+        return DFAFactory.eq(self.indeterminate, self.n)
+    
+    def __str__(self):
+        return f"{self.indeterminate} = {self.n}"
+
+class GeqGuard(Guard):
+    def __init__(self, indeterminate, n):
+        self.indeterminate = indeterminate
+        self.n = n
+        
+    def to_dfa(self):
+        return DFAFactory.neg(DFAFactory.lt(self.indeterminate, self.n))
+    
+    def __str__(self):
+        return f"{self.indeterminate} >= {self.n}"
+    
+class LeqGuard(Guard):
+    def __init__(self, indeterminate, n):
+        self.indeterminate = indeterminate
+        self.n = n
+        
+    def to_dfa(self):
+        return DFAFactory.lt(self.indeterminate, self.n + 1)
+    
+    def __str__(self):
+        return f"{self.indeterminate} <= {self.n}"
+    
+class GtGuard(Guard):
+    def __init__(self, indeterminate, n):
+        self.indeterminate = indeterminate
+        self.n = n
+        
+    def to_dfa(self):
+        return DFAFactory.neg(DFAFactory.lt(self.indeterminate, self.n + 1))
+    
+    def __str__(self):
+        return f"{self.indeterminate} > {self.n}"
