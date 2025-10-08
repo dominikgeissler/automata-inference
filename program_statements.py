@@ -1,8 +1,9 @@
 from automaton import PGA
 from guards import Guard
-from distributions import Distribution
+from distributions import *
 from automata_factory import PGAFactory, DFAFactory
 from abc import ABC, abstractmethod
+from visualizer import visualize
 
 class Statement(ABC):
     @abstractmethod
@@ -29,7 +30,7 @@ class IncrementConstantStatement(Statement):
     # Special case -> Join?
     def apply_semantics(self, pga) -> PGA:
         print(f"Calculating {str(self)}...")
-        return IncrementDistributionStatement(self.indeterminate, PGAFactory.dirac(self.indeterminate, self.n)).apply_semantics(pga)
+        return IncrementDistributionStatement(self.indeterminate, DiracDistribution(self.indeterminate, self.n)).apply_semantics(pga)
 
     def __str__(self):
         return f"{self.indeterminate} += {self.n}"
@@ -54,7 +55,7 @@ class IncrementVariableStatement(Statement):
     # Special case -> Join?
     def apply_semantics(self, pga) -> PGA:
         print(f"Calculating {str(self)}...")
-        return IidSamplingStatement(self.indeterminate_lhs, PGAFactory.dirac(self.indeterminate_lhs, 1), self.indeterminate_rhs).apply_semantics(pga)
+        return IidSamplingStatement(self.indeterminate_lhs, DiracDistribution(self.indeterminate_lhs, 1), self.indeterminate_rhs).apply_semantics(pga)
 
     def __str__(self):
         return f"{self.indeterminate_lhs} += {self.indeterminate_rhs}"
@@ -67,7 +68,7 @@ class IidSamplingStatement(Statement):
     
     def apply_semantics(self, pga) -> PGA:
         print(f"Calculating {str(self)}...")
-        return pga.transition_substitution(self.indeterminate_lhs, PGAFactory.dirac(self.indeterminate_rhs, 1).concat(self.distribution.to_pga()))
+        return pga.transition_substitution(self.indeterminate_rhs, PGAFactory.dirac(self.indeterminate_rhs, 1).concat(self.distribution.to_pga()))
         
     def __str__(self):
         return f"{self.indeterminate_lhs} += iid({self.distribution}, {self.indeterminate_rhs})"

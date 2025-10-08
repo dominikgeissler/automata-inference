@@ -59,19 +59,17 @@ class PGA(Automaton):
         Returns:
             PGA: The resulting PGA A_1 * A_2.
         """
-        print(f"Concatenating {self}, {other}")
+        print(f"CONCAT: {str(self)}, \n{str(other)}")
         if not self.states.isdisjoint(other.states):
             other = resolve_conflict(self, other)
-        print(other)
-        new_transition_matrix = self.transition_matrix
-        print(f"BLA {set(itertools.product(self.final, other.initial))}")
-        new_transition_matrix[CONSTANT_KEY].extend(
-            [(c1*c2, from_state, to_state) for ((c1, from_state), (c2,to_state)) in set(itertools.product(self.final, other.initial))]
-        )
-        for k in new_transition_matrix.keys():
-            print(f"Symbol {k}")
-            print(new_transition_matrix[k], other.transition_matrix[k])
-            new_transition_matrix[k] = new_transition_matrix[k] + other.transition_matrix[k]
+        new_transition_matrix = dict()
+        for k in self.transition_matrix.keys() | other.transition_matrix.keys():
+            print(k, other.transition_matrix[k])
+            new_transition_matrix[k] =  self.transition_matrix[k] + other.transition_matrix[k]
+        if CONSTANT_KEY in new_transition_matrix:
+            new_transition_matrix[CONSTANT_KEY] += [(c1*c2, from_state, to_state) for ((c1, from_state), (c2,to_state)) in set(itertools.product(self.final, other.initial))]
+        else:
+            new_transition_matrix[CONSTANT_KEY] = [(c1*c2, from_state, to_state) for ((c1, from_state), (c2,to_state)) in set(itertools.product(self.final, other.initial))]
         return PGA(
             self.states | other.states,
             new_transition_matrix,
@@ -92,8 +90,8 @@ class PGA(Automaton):
         """
         assert 0 <= p and p <= 1 and 0 <= q and q <= 1, f"p and q have to be between 0 and 1 , got {p=} and {q=}"
         if not self.states.isdisjoint(other.states):
-            pass # todo rename
-        new_initial = {(p*c, state) for (c, state) in self.intitial} + {(q*c, state) for (c,state) in other.initial}
+            other = resolve_conflict(self, other)
+        new_initial = {(p*c, state) for (c, state) in self.initial} | {(q*c, state) for (c,state) in other.initial}
         new_transition_matrix = dict()
         for k in self.transition_matrix.keys() | other.transition_matrix.keys():
             new_transition_matrix[k] = (self.transition_matrix[k] if k in self.transition_matrix else []) \
@@ -102,7 +100,7 @@ class PGA(Automaton):
             self.states | other.states,
             new_transition_matrix,
             new_initial,
-            self.final + other.final
+            self.final | other.final
         )
         
     def product(self, other: DFA) -> "PGA":
@@ -145,21 +143,27 @@ class PGA(Automaton):
         Returns:
             PGA: The PGA A_1[Y/A_2].
         """
+        print(indeterminate)
         indet_trans = self.transition_matrix[indeterminate]
         new_states = set([f"{q}_{i}" for q in other.states for i in range(len(indet_trans))])
         if not self.states.isdisjoint(other.states):
-            pass # todo rename
-        new_transition_matrix = self.transition_matrix
+            other = resolve_conflict(self, other)
+        
+        new_transition_matrix = self.transition_matrix.copy()
         new_transition_matrix[indeterminate] = []
-        for v in self.transition_matrix.keys():
-            new_transition_matrix[v] += [
-                (c, state1 + f"_{i}", state2 + "_{i}") for (c,state1,state2) in other.transition_matrix for i in range(len(indet_trans))
-            ]
+        
+        
+        for v in other.transition_matrix.keys():
+            if other.transition_matrix[v]:
+                print(other.transition_matrix[v][0])
+                new_transition_matrix[v] += [
+                    (c,  f"{state1}_{i}",  f"{state2}_{i}") for i in range(len(indet_trans)) for (c,state1,state2) in other.transition_matrix[v]
+                ]
         new_transition_matrix[CONSTANT_KEY].extend([
-            (indet_trans[i][0], indet_trans[i][1], f"{q}_{i}") for i in range(len(indet_trans)) for q in other.initial  
-        ])
+            (indet_trans[i][0] * c, indet_trans[i][1], f"{q}_{i}") for i in range(len(indet_trans)) for c, q in other.initial  
+        ] + [(c, f"{q}_{i}", indet_trans[i][2] ) for c, q in other.final for i in range(len(indet_trans))])
         return PGA(
-            new_states,
+            self.states | new_states,
             new_transition_matrix,
             self.initial,
             self.final
@@ -173,11 +177,11 @@ def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
     rename_map = {s: s + suffix for s in a2.states}
     
     def rename_set(S):
-        # could contain just states or (weight, state)
+        # handle weighted and unweighted case
         renamed = set()
         for elem in S:
             if isinstance(elem, tuple) and len(elem) == 2 and not isinstance(elem[0], str):
-                # likely (weight, state)
+                # (weight, state)
                 w, s = elem
                 renamed.add((w, rename_map.get(s,s)))
             else:
@@ -189,7 +193,6 @@ def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
     for indeterminate, transitions in a2.transition_matrix.items():
         new_entries = []
         for entry in transitions:
-            new_entries = []
             if len(entry) == 2:
                 # Unweighted case
                 s,t = entry

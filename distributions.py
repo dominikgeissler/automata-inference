@@ -7,9 +7,9 @@ class Distribution(ABC):
     def to_pga(self) -> PGA:
         pass
     
-class BinomialDistribution(Distribution):
+class BernoulliDistribution(Distribution):
     """
-        Represents the binomial distribution.
+        Represents the bernoulli distribution.
     """
     def __init__(self, indeterminate, p: float):
         assert 0 <= p and p <= 1, f"p has to be between 0 and 1, got {p=}"
@@ -17,7 +17,7 @@ class BinomialDistribution(Distribution):
         self.p = p
         
     def to_pga(self) -> PGA:
-        return PGAFactory.binomial(self.indeterminate, self.p)
+        return PGAFactory.bernoulli(self.indeterminate, self.p)
     
     def __str__(self):
         return f"Binom({self.p})"

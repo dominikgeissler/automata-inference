@@ -1,7 +1,7 @@
 from automaton import *
 from graphviz import Digraph
 
-def visualize(aut: Automaton, out_path="aut.pdf", view=False):
+def visualize(aut: Automaton, out_path="aut", view=False):
     dot = Digraph(comment="Automaton visualization")
     
     is_pga = isinstance(aut, PGA)
@@ -39,5 +39,5 @@ def visualize(aut: Automaton, out_path="aut.pdf", view=False):
             
             dot.edge(s, t, label=label)
     
-    dot.render(out_path, format="pdf", view=view)
+    dot.render(out_path, format="pdf", view=view, cleanup=True)
     

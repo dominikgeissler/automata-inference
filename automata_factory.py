@@ -9,8 +9,13 @@ class PGAFactory:
     def __init__(self, variables):
         self.variables = variables
     @classmethod
-    def zero():
-        pass
+    def zero(self):
+        return PGA(
+            {"q_0"},
+            dict({v: [] for v in VARIABLES}),
+            {(1, "q_0")},
+            {}
+        )
     
     @classmethod
     def one(self):
@@ -34,23 +39,23 @@ class PGAFactory:
     @classmethod
     def dirac(self, indeterminate, n: int) -> PGA:
         return PGA(
-            {f"q_{i}" for i in range(n)},
+            {f"q_{i}" for i in range(n + 1)},
             dict({indeterminate: [(1, f"q_{i}", f"q_{i+1}") for i in range(n)]} | {v: [] for v in VARIABLES - {indeterminate}}),
-            {"q_0"},
-            {f"q_{n-1}"}
+            {(1, "q_0")},
+            {(1, f"q_{n}")}
         )
     
     @classmethod
     def uniform(self, indeterminate, n: int) -> PGA:
         return PGA(
-            {f"q_{i}" for i in range(n)},
-            dict({indeterminate: [(1, f"q_{i}", f"q_{i+1}") for i in range(n)]} | {v: [] for v in VARIABLES - {indeterminate}}),
+            {f"q_{i}" for i in range(n-1)},
+            dict({indeterminate: [(1, f"q_{i}", f"q_{i+1}") for i in range(n-1)]} | {v: [] for v in VARIABLES - {indeterminate}}),
             {(1, "q_0")},
             {(1/n, f"q_{i}") for i in range(n) }
         )
     
     @classmethod
-    def binomial(self, indeterminate, p: float) -> PGA:
+    def bernoulli(self, indeterminate, p: float) -> PGA:
         return PGA(
             {"q_0", "q_1"},
             dict({indeterminate: [(p, "q_0", "q_1")]} | {v: [] for v in VARIABLES - {indeterminate}}),
@@ -69,7 +74,7 @@ class DFAFactory:
     def lt(self, indeterminate, val):
         states = {f"p_{i}" for i in range(val + 1)}
         initial = {"p_0"}
-        final = {f"p_{val - 1}"}
+        final = {f"p_{i}" for i in range(val)}
         transition_matrix = dict()
         transition_matrix[indeterminate] = \
             [(f"p_{i}", f"p_{i+1}") for i in range(val)] + [(f"p_{val}", f"p_{val}")]
@@ -89,7 +94,7 @@ class DFAFactory:
         final = {f"q_{residue}"}
         transition_matrix = dict()
         transition_matrix[indeterminate] = \
-            [(f"q_{i}", f"q_{i+1}") for i in range(modulus)] + [(f"q_{modulus - 1}", "q_0")]
+            [(f"q_{i}", f"q_{i+1}") for i in range(modulus -1 )] + [(f"q_{modulus - 1}", "q_0")]
         transition_matrix = reflexive_closure(transition_matrix, VARIABLES - {indeterminate}, states)
         return DFA(
             states,
