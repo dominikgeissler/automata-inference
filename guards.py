@@ -53,6 +53,20 @@ class ModGuard(Guard):
     def __str__(self):
         return f"{self.indeterminate} mod {self.modulus} = {self.residue}"
     
+# ----------------- Syntactic Sugar ---------------
+class EqGuard(Guard):
+    def __init__(self, indeterminate, n):
+        self.indeterminate = indeterminate
+        self.n = n
+        
+    def to_dfa(self):
+        return DFAFactory.eq(self.indeterminate, self.n)
+    
+    def __str__(self):
+        return f"{self.indeterminate} = {self.n}"
+
+
+
 class NegGuard(Guard):
     """
         Negation of a guard.

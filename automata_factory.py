@@ -65,7 +65,15 @@ class PGAFactory:
     
     @classmethod
     def neg_binomial(self, indeterminate, n: int, p: float) -> PGA:
-        raise NotImplementedError("kb gerade lol")
+        assert n > 0, f"n has to be greater than 0, got {n=}"
+        assert 0 <= p and p <= 1, f"p has to be between 0 and 1, got {p=}"
+        
+        aut = PGAFactory.geometric(indeterminate, p)
+        for _ in range(n):
+            aut = aut.concat(PGAFactory.geometric(indeterminate, p))
+            
+        return aut
+            
     
     
     
@@ -95,6 +103,23 @@ class DFAFactory:
         transition_matrix = dict()
         transition_matrix[indeterminate] = \
             [(f"q_{i}", f"q_{i+1}") for i in range(modulus -1 )] + [(f"q_{modulus - 1}", "q_0")]
+        transition_matrix = reflexive_closure(transition_matrix, VARIABLES - {indeterminate}, states)
+        return DFA(
+            states,
+            transition_matrix,
+            initial,
+            final
+        )
+        
+    # -------- Syntactic Sugar --------------
+    @classmethod
+    def eq(self, indeterminate, val):
+        states = {f"p_{i}" for i in range(val + 2)}
+        initial = {"p_0"}
+        final = {f"p_{val}"}
+        transition_matrix = dict()
+        transition_matrix[indeterminate] = \
+            [(f"p_{i}", f"p_{i+1}") for i in range(val+1)] + [(f"p_{val+1}", f"p_{val+1}")]
         transition_matrix = reflexive_closure(transition_matrix, VARIABLES - {indeterminate}, states)
         return DFA(
             states,

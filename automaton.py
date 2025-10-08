@@ -59,12 +59,10 @@ class PGA(Automaton):
         Returns:
             PGA: The resulting PGA A_1 * A_2.
         """
-        print(f"CONCAT: {str(self)}, \n{str(other)}")
         if not self.states.isdisjoint(other.states):
             other = resolve_conflict(self, other)
         new_transition_matrix = dict()
         for k in self.transition_matrix.keys() | other.transition_matrix.keys():
-            print(k, other.transition_matrix[k])
             new_transition_matrix[k] =  self.transition_matrix[k] + other.transition_matrix[k]
         if CONSTANT_KEY in new_transition_matrix:
             new_transition_matrix[CONSTANT_KEY] += [(c1*c2, from_state, to_state) for ((c1, from_state), (c2,to_state)) in set(itertools.product(self.final, other.initial))]
@@ -110,19 +108,16 @@ class PGA(Automaton):
             other (DFA): The DFA the PGA should by filtered by.
 
         Returns:
-            PGA: The filtered PGA A x B_\phi.
+            PGA: The filtered PGA A x B_phi.
         """
         if not self.states.isdisjoint(other.states):
             other = resolve_conflict(self, other)
-        new_states = {f"({q1,q2})" for q1 in self.states for q2 in other.states}
+        new_states = {f"({q1},{q2})" for q1 in self.states for q2 in other.states}
         new_transition_matrix = dict()
-        print(f"Self: {self.transition_matrix}, Other: {other.transition_matrix}")
         for v in self.transition_matrix.keys():
-            print(f"Symbol {v}")
             s_trans = self.transition_matrix[v]
             o_trans = other.transition_matrix[v]
             new_transition_matrix[v] = [(c, f"({state1},{state2})", f"({state3},{state4})") for (c, state1, state3) in s_trans for (state2, state4) in o_trans] 
-            print(new_transition_matrix[v])
         new_initial = set((c, f"({state1},{state2})") for (c,state1) in self.initial for state2 in other.initial)
         new_final = set((c, f"({state1},{state2})") for (c,state1) in self.final for state2 in other.final)
         
@@ -143,7 +138,6 @@ class PGA(Automaton):
         Returns:
             PGA: The PGA A_1[Y/A_2].
         """
-        print(indeterminate)
         indet_trans = self.transition_matrix[indeterminate]
         new_states = set([f"{q}_{i}" for q in other.states for i in range(len(indet_trans))])
         if not self.states.isdisjoint(other.states):
@@ -155,7 +149,6 @@ class PGA(Automaton):
         
         for v in other.transition_matrix.keys():
             if other.transition_matrix[v]:
-                print(other.transition_matrix[v][0])
                 new_transition_matrix[v] += [
                     (c,  f"{state1}_{i}",  f"{state2}_{i}") for i in range(len(indet_trans)) for (c,state1,state2) in other.transition_matrix[v]
                 ]
