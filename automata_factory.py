@@ -26,9 +26,9 @@ class PGAFactory:
     def geometric(self, indeterminate, p) -> PGA:
         return PGA(
             {"q_0"},
-            dict({indeterminate: [(p, "q_0", "q_0")]} | {v: [] for v in VARIABLES - {indeterminate}}),
+            dict({indeterminate: [(1-p, "q_0", "q_0")]} | {v: [] for v in VARIABLES - {indeterminate}}),
             {(1, "q_0")},
-            {(1, "q_0")}
+            {(p, "q_0")}
         )
     
     @classmethod

@@ -30,7 +30,7 @@ class PGA(Automaton):
         return super().__init__(states, transition_matrix, initial, final)
     
     def substitute(self, indeterminate, value: int) -> "PGA":
-        """Substitutes a given indeterminate by some value \in {0,1}
+        """Substitutes a given indeterminate by some value in {0,1}
 
         Args:
             indeterminate (str): The indeterminate to be substituted
@@ -64,8 +64,9 @@ class PGA(Automaton):
             other = resolve_conflict(self, other)
         print(other)
         new_transition_matrix = self.transition_matrix
+        print(f"BLA {set(itertools.product(self.final, other.initial))}")
         new_transition_matrix[CONSTANT_KEY].extend(
-            [(1, from_state, to_state) for ((_, from_state), (_,to_state)) in set(itertools.product(self.final, other.initial))]
+            [(c1*c2, from_state, to_state) for ((c1, from_state), (c2,to_state)) in set(itertools.product(self.final, other.initial))]
         )
         for k in new_transition_matrix.keys():
             print(f"Symbol {k}")
