@@ -1,4 +1,4 @@
-from automaton import Automaton, PGA
+from automata_factory import Automaton, PGA
 from graphviz import Digraph
 
 

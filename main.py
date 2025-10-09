@@ -1,4 +1,3 @@
-from minimization import minimize
 from program_statements import (
     SequentialCompositionStatement,
     IncrementConstantStatement,
@@ -7,10 +6,11 @@ from program_statements import (
     SetToZeroStatement,
     CoinflipStatement,
     IncrementDistributionStatement,
+    MonusStatement
 )
 from distributions import GeometricDistribution, NegBinomialDistribution
 from guards import LtGuard, EqGuard, GeqGuard
-from automata_factory import PGAFactory
+from automata_factory import PGAFactory, minimize
 from visualizer import visualize
 
 # todo symbolic fractions
@@ -52,9 +52,10 @@ program = SequentialCompositionStatement(
     ),
 )
 
+program = MonusStatement("X")
 
 print(program)
-input_pga = PGAFactory.one()
+input_pga = PGAFactory.geometric("X", 0.5)
 out = program.apply_semantics(input_pga)
 
 minimize(out)

@@ -1,6 +1,5 @@
-from automaton import DFA
 from abc import ABC, abstractmethod
-from automata_factory import DFAFactory
+from automata_factory import DFAFactory, DFA
 
 
 class Guard(ABC):

@@ -1,9 +1,7 @@
-from automaton import PGA
 from guards import Guard
 from distributions import Distribution, DiracDistribution
-from automata_factory import PGAFactory, DFAFactory
+from automata_factory import PGAFactory, DFAFactory, PGA
 from abc import ABC, abstractmethod
-from minimization import minimize
 
 
 class Statement(ABC):
@@ -124,10 +122,10 @@ class IfStatement(Statement):
         print(f"Calculating {str(self)}...")
         guard_dfa = self.guard.to_dfa()
         neg_guard_dfa = DFAFactory.neg(guard_dfa)
-        product_then = minimize(pga.product(guard_dfa))
-        product_else = minimize(pga.product(neg_guard_dfa))
-        return self.then_statement.apply_semantics(product_then).weighted_union(
-            self.else_statement.apply_semantics(product_else), 1, 1
+        return self.then_statement.apply_semantics(
+            pga.product(guard_dfa)
+        ).weighted_union(
+            self.else_statement.apply_semantics(pga.product(neg_guard_dfa)), 1, 1
         )
 
     def __str__(self):
@@ -139,7 +137,7 @@ class MonusStatement(Statement):
         self.indeterminate = indeterminate
 
     def apply_semantics(self, pga) -> PGA:
-        pass  # TODO monus
+        return pga.decrement(self.indeterminate)
 
     def __str__(self):
         return f"{self.indeterminate}--"

@@ -1,5 +1,4 @@
-from automaton import PGA
-from automata_factory import PGAFactory
+from automata_factory import PGAFactory, PGA
 from abc import abstractmethod, ABC
 
 
