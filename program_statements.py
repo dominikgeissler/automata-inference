@@ -162,9 +162,7 @@ class SequentialCompositionStatement(Statement):
 
     def apply_semantics(self, pga: PGA) -> PGA:
         print(f"Calculating {str(self)}...")
-        res_lhs = self.lhs.apply_semantics(pga)
-        print(res_lhs)
-        return self.rhs.apply_semantics(res_lhs)
-
+        return self.rhs.apply_semantics(self.lhs.apply_semantics(pga))
+    
     def __str__(self):
         return str(self.lhs) + ";" + str(self.rhs)

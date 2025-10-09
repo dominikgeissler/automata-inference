@@ -2,11 +2,6 @@ import itertools
 from abc import ABC
 
 VARIABLES = {"X", "Y", "Z", 1}
-
-# TODO Remove hardcoded names
-# TODO checks that indeterminate is different from 1?
-# TODO better way of storing indeterminates / states?
-
 CONSTANT_KEY = 1
 
 
@@ -49,6 +44,10 @@ class PGA(Automaton):
         final: set[tuple[float, str]],
     ):
         return super().__init__(states, transition_matrix, initial, final)
+    
+    def get_probability_mass(self) -> float:
+        raise NotImplementedError("todo")  
+        return 0
 
     def substitute(self, indeterminate, value: int) -> "PGA":
         """Substitutes a given indeterminate by some value in {0,1}
@@ -79,8 +78,7 @@ class PGA(Automaton):
         Returns:
             PGA: The resulting PGA A_1 * A_2.
         """
-        if not self.states.isdisjoint(other.states):
-            other = resolve_conflict(self, other)
+        other = resolve_conflict(self, other)
         new_transition_matrix = dict()
         for k in self.transition_matrix.keys() | other.transition_matrix.keys():
             new_transition_matrix[k] = (
@@ -115,11 +113,10 @@ class PGA(Automaton):
         Returns:
             PGA: The resulting PGA A_1 p^+^q A_2.
         """
-        assert 0 <= p and p <= 1 and 0 <= q and q <= 1, (
+        assert is_probability(p) and is_probability(q), (
             f"p and q have to be between 0 and 1 , got {p=} and {q=}"
         )
-        if not self.states.isdisjoint(other.states):
-            other = resolve_conflict(self, other)
+        other = resolve_conflict(self, other)
         new_initial = {(p * c, state) for (c, state) in self.initial} | {
             (q * c, state) for (c, state) in other.initial
         }
@@ -144,8 +141,7 @@ class PGA(Automaton):
         Returns:
             PGA: The filtered PGA A x B_phi.
         """
-        if not self.states.isdisjoint(other.states):
-            other = resolve_conflict(self, other)
+        other = resolve_conflict(self, other)
         new_states = {f"({q1},{q2})" for q1 in self.states for q2 in other.states}
         new_transition_matrix = dict()
         for v in self.transition_matrix.keys():
@@ -167,7 +163,7 @@ class PGA(Automaton):
             for state2 in other.final
         )
 
-        return PGA(new_states, new_transition_matrix, new_initial, new_final)
+        return minimize(PGA(new_states, new_transition_matrix, new_initial, new_final))
 
     def transition_substitution(self, indeterminate, other: "PGA") -> "PGA":
         """Substitutes all indeterminates of the PGA by the other PGA.
@@ -183,8 +179,7 @@ class PGA(Automaton):
         new_states = set(
             [f"{q}_{i}" for q in other.states for i in range(len(indet_trans))]
         )
-        if not self.states.isdisjoint(other.states):
-            other = resolve_conflict(self, other)
+        other = resolve_conflict(self, other)
 
         new_transition_matrix = self.transition_matrix.copy()
         new_transition_matrix[indeterminate] = []
@@ -214,8 +209,8 @@ class PGA(Automaton):
 
     def decrement(self, indeterminate) -> "PGA":
         dfa_filter = resolve_conflict(self, DFAFactory.neg(DFAFactory.lt("X", 1)))
-        filtered = minimize(self.product(dfa_filter))
-        subs_zero = minimize(self.substitute("X", 0))
+        filtered = self.product(dfa_filter)
+        subs_zero = self.substitute("X", 0)
         dfa_s, dfa_t = [el for el in dfa_filter.transition_matrix[indeterminate] if el[0] != el[1]][0]
         new_transition_matrix: dict[str, list[tuple[float, str, str]]] = filtered.transition_matrix.copy()
         for trans in new_transition_matrix[indeterminate]:
@@ -228,6 +223,19 @@ class PGA(Automaton):
         
 
 def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
+    """Checks for disjoint state sets and, if not disjoint, renames the states of the second automaton for the state sets to be disjoint
+    (Also changes the transition matrix and initial / final state sets).
+
+    Args:
+        a1 (Automaton): The first automaton.
+        a2 (Automaton): The second automaton. This one will be changed.
+
+    Raises:
+        ValueError: Invalid transition matrix.
+
+    Returns:
+        Automaton: The changed a2 automaton with new state labels that are now disjoint from a1.
+    """
     if a1.states.isdisjoint(a2.states):
         return a2
     suffix = "_1"
@@ -275,14 +283,30 @@ def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
     )
 
 
-def minimize(aut: Automaton):
+def minimize(aut: Automaton) -> Automaton:
+    """Minimizes the given automaton by removing non-coaccessible states and merging redundant states.
+
+    Args:
+        aut (Automaton): The automaton to be minimized. 
+
+    Returns:
+        Automaton: The minimized automaton.
+    """
     aut = remove_noncoaccessible_states(aut)
     if isinstance(aut, PGA):
         aut = merge_states(aut)
     return aut
 
 
-def remove_noncoaccessible_states(aut: Automaton):
+def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
+    """Removes unreachable and non-coaccessible states.
+
+    Args:
+        aut (Automaton): The automaton to be minimized
+
+    Returns:
+        Automaton: The automaton without unreachable / non-coaccessible states.
+    """
     is_pga = isinstance(aut, PGA)
 
     def get_state(possible_weighted_state):
@@ -357,7 +381,6 @@ def merge_states(aut: PGA):
     return aut
     if is_minimal(aut):
         return aut
-    # todo implement
     pass
 
 
@@ -368,6 +391,8 @@ def is_minimal(aut: PGA):
 
 
 class PGAFactory:
+    """Constructs distribution PGAs.
+    """
     def __init__(self, variables):
         self.variables = variables
 
@@ -433,7 +458,7 @@ class PGAFactory:
     @classmethod
     def neg_binomial(self, indeterminate, n: int, p: float) -> PGA:
         assert n > 0, f"n has to be greater than 0, got {n=}"
-        assert 0 <= p and p <= 1, f"p has to be between 0 and 1, got {p=}"
+        assert is_probability(p), f"p has to be between 0 and 1, got {p=}"
 
         aut = PGAFactory.geometric(indeterminate, p)
         for _ in range(n - 1):
@@ -443,8 +468,20 @@ class PGAFactory:
 
 
 class DFAFactory:
+    """Constructs guard DFAs.
+    """
     @classmethod
-    def lt(self, indeterminate, val):
+    def lt(self, indeterminate: str, val: int) -> DFA:
+        """The DFA encoding the less-than guard `indeterminate` < `val`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            val (int): The value its count should be less than.
+
+        Returns:
+            DFA: The DFA encoding the guard.
+        """
+        assert val >= 0, "..."
         states = {f"p_{i}" for i in range(val + 1)}
         initial = {"p_0"}
         final = {f"p_{i}" for i in range(val)}
@@ -458,7 +495,17 @@ class DFAFactory:
         return DFA(states, transition_matrix, initial, final)
 
     @classmethod
-    def mod(self, indeterminate, modulus, residue):
+    def mod(self, indeterminate: str, modulus: int, residue: int) -> DFA:
+        """The DFA encoding the modulus guard `indeterminate` mod `modulus` = `residue`. `modulus` has to be greater than `residue`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            modulus (int): The modulus.
+            residue (int): The residue from the operation.
+
+        Returns:
+            DFA: The DFA encoding the guard.
+        """
         assert modulus > residue, "Modulus has to be greater than residue."
         states = {f"q_{i}" for i in range(modulus)}
         initial = {"q_0"}
@@ -474,7 +521,17 @@ class DFAFactory:
 
     # -------- Syntactic Sugar --------------
     @classmethod
-    def eq(self, indeterminate, val):
+    def eq(self, indeterminate: str, val: int) -> DFA:
+        """The DFA encoding the equality guard `indeterminate` = `val`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            val (int): The number the amount of indeterminates should be equal to. 
+
+        Returns:
+            DFA: The DFA encoding the guard.
+        """
+        assert val >= 0, f"n has to be greater or equal to 0, got {val=}"
         states = {f"p_{i}" for i in range(val + 2)}
         initial = {"p_0"}
         final = {f"p_{val}"}
@@ -488,13 +545,30 @@ class DFAFactory:
         return DFA(states, transition_matrix, initial, final)
 
     @classmethod
-    def neg(self, dfa: DFA):
+    def neg(self, dfa: DFA) -> DFA:
+        """The complement of a DFA.
+
+        Args:
+            dfa (DFA): The DFA to be complemented.
+
+        Returns:
+            DFA: The complement of the DFA.
+        """
         return DFA(
             dfa.states, dfa.transition_matrix, dfa.initial, dfa.states - dfa.final
         )
 
     @classmethod
-    def land(self, dfa1: DFA, dfa2: DFA):
+    def land(self, dfa1: DFA, dfa2: DFA) -> DFA:
+        """Intersection of two DFAs.
+
+        Args:
+            dfa1 (DFA): The first DFA._
+            dfa2 (DFA): The second DFA:
+
+        Returns:
+            DFA: The resulting intersection DFA.
+        """
         states = set(itertools.product(dfa1.states, dfa2.states))
         initial = set(itertools.product(dfa1.initial, dfa2.initial))
         final = set(itertools.product(dfa1.final, dfa2.final))
@@ -508,7 +582,30 @@ class DFAFactory:
         return DFA(states, transition_matrix, initial, final)
 
 
-def reflexive_closure(transition_matrix, variables, states):
+# ------- Helpers -------------
+
+def reflexive_closure(transition_matrix: dict[str, tuple], variables: set[str], states: set[str]) -> dict[str, tuple]:
+    """Adds self-loops to every state with the provided variables.
+
+    Args:
+        transition_matrix (dict[str, tuple]): The transition matrix to be extended.
+        variables (set[str]): The set of variables for which self-loops should be added.
+        states (set[str]): The set of states which should have these self-loops.
+
+    Returns:
+        dict[str, tuple]: The extended transition matrix.
+    """
     for v in variables:
         transition_matrix[v] = [(q, q) for q in states]
     return transition_matrix
+
+def is_probability(p: float) -> bool:
+    """Checks whether a given float is a probability, i.e. between 0 and 1.
+
+    Args:
+        p (float): The supposed probability
+
+    Returns:
+        bool: A Boolean indicating whether p is a probability.
+    """
+    return 0 <= p and p <= 1
