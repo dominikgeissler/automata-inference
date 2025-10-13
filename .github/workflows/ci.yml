@@ -1,6 +1,6 @@
 name: CI
 on:
-  pusb:
+  push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
