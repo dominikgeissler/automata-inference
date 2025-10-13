@@ -62,10 +62,10 @@ class PGA(Automaton):
         assert value in {0, 1}, (
             f"Substitution is only supported for 0 or 1, got {value}"
         )
-        new_transition_matrix = self.transition_matrix
+        new_transition_matrix = self.transition_matrix.copy()
         new_transition_matrix[indeterminate] = []
         new_transition_matrix[CONSTANT_KEY].extend(
-            self.transition_matrix[indeterminate] if indeterminate == 1 else []
+            self.transition_matrix[indeterminate]
         )
         return PGA(self.states, new_transition_matrix, self.initial, self.final)
 
@@ -162,7 +162,6 @@ class PGA(Automaton):
             for (c, state1) in self.final
             for state2 in other.final
         )
-
         return minimize(PGA(new_states, new_transition_matrix, new_initial, new_final))
 
     def transition_substitution(self, indeterminate, other: "PGA") -> "PGA":
@@ -318,7 +317,6 @@ def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
 
     successors = {q: set() for q in aut.states}
     predecessors = {q: set() for q in aut.states}
-    print(aut.states)
     for _, transitions in aut.transition_matrix.items():
         for trans in transitions:
             if is_pga:
@@ -372,8 +370,6 @@ def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
     else:
         aut.initial = aut.initial & keep
         aut.final = aut.final & keep
-
-    print(aut)
     return aut
 
 
@@ -398,7 +394,7 @@ class PGAFactory:
 
     @classmethod
     def zero(self):
-        return PGA({"q_0"}, dict({v: [] for v in VARIABLES}), {(1, "q_0")}, {})
+        return PGA({"q_0"}, dict({v: [] for v in VARIABLES}), {(1, "q_0")}, set())
 
     @classmethod
     def one(self):
@@ -434,7 +430,7 @@ class PGAFactory:
     @classmethod
     def uniform(self, indeterminate, n: int) -> PGA:
         return PGA(
-            {f"q_{i}" for i in range(n - 1)},
+            {f"q_{i}" for i in range(n)},
             dict(
                 {indeterminate: [(1, f"q_{i}", f"q_{i + 1}") for i in range(n - 1)]}
                 | {v: [] for v in VARIABLES - {indeterminate}}
