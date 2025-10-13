@@ -16,7 +16,7 @@ jobs:
           python-version: 3.12
       - name: install poetry
         run: |
-          apt-get install -y python3-poetry
+          sudo apt-get install -y python3-poetry
       - name: setup project
         run: |
           poetry install --no-interaction
