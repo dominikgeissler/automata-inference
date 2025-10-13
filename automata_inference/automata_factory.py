@@ -1,14 +1,24 @@
-import itertools
-from abc import ABC
+from __future__ import annotations
 
-VARIABLES = {"X", "Y", "Z", 1}
-CONSTANT_KEY = 1
+import itertools
+from abc import ABC, abstractmethod
+from typing import TypeVar
+
+CONSTANT_KEY = "1"
+VARIABLES = {"X", "Y", "Z", CONSTANT_KEY}
 
 
 class Automaton(ABC):
     """Represents the abstract notion of an automaton."""
 
-    def __init__(self, states: set[str], transition_matrix: dict[tuple], initial: set, final: set):
+    @abstractmethod
+    def __init__(
+        self,
+        states: set[str],
+        transition_matrix: dict[str, list[tuple]],
+        initial: set,
+        final: set,
+    ):
         self.states = states
         self.transition_matrix = transition_matrix
         self.initial = initial
@@ -28,6 +38,9 @@ class Automaton(ABC):
             and self.final == value.final
         )
 
+# Used for generic function typing
+# TODO use Self instead of TypeVar?
+T = TypeVar("T", bound="Automaton")
 
 class DFA(Automaton):
     """
@@ -36,12 +49,15 @@ class DFA(Automaton):
 
     def __init__(
         self,
-        states,
+        states: set[str],
         transition_matrix: dict[str, list[tuple[str, str]]],
         initial: set[str],
         final: set[str],
     ):
-        super().__init__(states, transition_matrix, initial, final)
+        self.states = states
+        self.transition_matrix = transition_matrix
+        self.initial = initial
+        self.final = final
 
 
 class PGA(Automaton):
@@ -49,12 +65,15 @@ class PGA(Automaton):
 
     def __init__(
         self,
-        states,
+        states: set[str],
         transition_matrix: dict[str, list[tuple[float, str, str]]],
         initial: set[tuple[float, str]],
         final: set[tuple[float, str]],
     ):
-        super().__init__(states, transition_matrix, initial, final)
+        self.states = states
+        self.transition_matrix = transition_matrix
+        self.initial = initial
+        self.final = final
 
     def get_probability_mass(self) -> float:
         """Calculates the probability mass of the PGA.
@@ -64,7 +83,7 @@ class PGA(Automaton):
         """
         raise NotImplementedError("todo")
 
-    def substitute(self, indeterminate, value: int) -> "PGA":
+    def substitute(self, indeterminate: str, value: int) -> PGA:
         """Substitutes a given indeterminate by some value in {0,1}
 
         Args:
@@ -80,7 +99,7 @@ class PGA(Automaton):
         new_transition_matrix[CONSTANT_KEY].extend(self.transition_matrix[indeterminate] if value == 1 else [])
         return PGA(self.states, new_transition_matrix, self.initial, self.final)
 
-    def concat(self, other: "PGA") -> "PGA":
+    def concat(self, other: PGA) -> PGA:
         """Concatenates two PGA.
 
         Args:
@@ -105,7 +124,7 @@ class PGA(Automaton):
             ]
         return PGA(self.states | other.states, new_transition_matrix, self.initial, other.final)
 
-    def weighted_union(self, other: "PGA", p: float, q: float) -> "PGA":
+    def weighted_union(self, other: PGA, p: float, q: float) -> PGA:
         """Constructs the disjoint weighted union automaton, given a PGA and two weights p,q.
 
         Args:
@@ -131,7 +150,7 @@ class PGA(Automaton):
             self.final | other.final,
         )
 
-    def product(self, other: DFA) -> "PGA":
+    def product(self, other: DFA) -> PGA:
         """Filters the PGA by a given DFA.
 
         Args:
@@ -155,7 +174,7 @@ class PGA(Automaton):
         new_final = set((c, f"({state1},{state2})") for (c, state1) in self.final for state2 in other.final)
         return minimize(PGA(new_states, new_transition_matrix, new_initial, new_final))
 
-    def transition_substitution(self, indeterminate, other: "PGA") -> "PGA":
+    def transition_substitution(self, indeterminate, other: PGA) -> PGA:
         """Substitutes all indeterminates of the PGA by the other PGA.
 
         Args:
@@ -189,7 +208,7 @@ class PGA(Automaton):
         )
         return PGA(self.states | new_states, new_transition_matrix, self.initial, self.final)
 
-    def decrement(self, indeterminate: str) -> "PGA":
+    def decrement(self, indeterminate: str) -> PGA:
         """Creates the decrement automaton for monus.
 
         Args:
@@ -215,7 +234,7 @@ class PGA(Automaton):
         return filtered.weighted_union(subs_zero, 1, 1)
 
 
-def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
+def resolve_conflict(a1: T, a2: Automaton) -> T:
     """Checks for disjoint state sets and, if not disjoint, renames the states of the second automaton for the state 
     sets to be disjoint. (Also changes the transition matrix and initial / final state sets).
 
@@ -272,15 +291,23 @@ def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
             else:
                 raise ValueError(f"Weird transition matrix entry {entry}")
         new_transition_matrix[indeterminate] = new_entries
-    return Automaton(
-        states=rename_set(a2.states),
-        transition_matrix=new_transition_matrix,
-        initial=rename_set(a2.initial),
-        final=rename_set(a2.final),
-    )
+    if isinstance(a1, PGA):  
+        return PGA(
+            states=rename_set(a2.states),
+            transition_matrix=new_transition_matrix,
+            initial=rename_set(a2.initial),
+            final=rename_set(a2.final),
+        )
+    else:
+        return DFA(
+            states=rename_set(a2.states),
+            transition_matrix=new_transition_matrix,
+            initial=rename_set(a2.initial),
+            final=rename_set(a2.final),
+        )
 
 
-def minimize(aut: Automaton) -> Automaton:
+def minimize(aut: T) -> T:
     """Minimizes the given automaton by removing non-coaccessible states and merging redundant states.
 
     Args:
@@ -290,12 +317,12 @@ def minimize(aut: Automaton) -> Automaton:
         Automaton: The minimized automaton.
     """
     aut = remove_noncoaccessible_states(aut)
-    if isinstance(aut, PGA):
-        aut = merge_states(aut)
+    # if isinstance(aut, PGA):
+    #     aut = merge_states(aut)
     return aut
 
 
-def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
+def remove_noncoaccessible_states(aut: T) -> T:
     """Removes unreachable and non-coaccessible states.
 
     Args:
@@ -309,8 +336,8 @@ def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
     def get_state(possible_weighted_state):
         return possible_weighted_state[1] if isinstance(possible_weighted_state, tuple) else possible_weighted_state
 
-    successors = {q: set() for q in aut.states}
-    predecessors = {q: set() for q in aut.states}
+    successors: dict[str, set[str]] = {q: set() for q in aut.states}
+    predecessors: dict[str, set[str]] = {q: set() for q in aut.states}
     for _, transitions in aut.transition_matrix.items():
         for trans in transitions:
             if is_pga:
@@ -392,7 +419,7 @@ class PGAFactory:
         Returns:
             PGA: The PGA encoding the zero subdistribtion.
         """
-        return PGA({"q_0"}, dict({v: [] for v in VARIABLES}), {(1, "q_0")}, set())
+        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(1, "q_0")}, set())
 
     @classmethod
     def one(cls) -> PGA:
@@ -401,7 +428,7 @@ class PGAFactory:
         Returns:
             PGA: The PGA encoding the one distribution,
         """
-        return PGA({"q_0"}, dict({v: [] for v in VARIABLES}), {(1, "q_0")}, {(1, "q_0")})
+        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(1, "q_0")}, {(1, "q_0")})
 
     # --- Distributions ---
     @classmethod
@@ -598,15 +625,15 @@ class DFAFactory:
         Returns:
             DFA: The resulting intersection DFA.
         """
-        states = set(itertools.product(dfa1.states, dfa2.states))
-        initial = set(itertools.product(dfa1.initial, dfa2.initial))
-        final = set(itertools.product(dfa1.final, dfa2.final))
+        states = {f"({state1},{state2})" for state1 in dfa1.states for state2 in dfa2.states}
+        initial = {f"({state1},{state2})" for state1 in dfa1.initial for state2 in dfa2.initial}
+        final = {f"({state1},{state2})" for state1 in dfa1.final for state2 in dfa2.final}
         transition_matrix = {}
         for v in VARIABLES:
             transition_matrix[v] = [
                 (f"({state1},{state2})", f"({state3},{state4})")
                 for (state1, state3) in dfa1.transition_matrix[v]
-                for (state2, state4) in dfa2.transition_matrix
+                for (state2, state4) in dfa2.transition_matrix[v]
             ]
         return DFA(states, transition_matrix, initial, final)
 
@@ -614,7 +641,7 @@ class DFAFactory:
 # ------- Helpers -------------
 
 
-def reflexive_closure(transition_matrix: dict[str, tuple], variables: set[str], states: set[str]) -> dict[str, tuple]:
+def reflexive_closure(transition_matrix: dict[str, list[tuple[str, str]]], variables: set[str], states: set[str]) -> dict[str, list[tuple[str, str]]]:
     """Adds self-loops to every state with the provided variables.
 
     Args:
@@ -626,5 +653,5 @@ def reflexive_closure(transition_matrix: dict[str, tuple], variables: set[str], 
         dict[str, tuple]: The extended transition matrix.
     """
     for v in variables:
-        transition_matrix[v] = [(q, q) for q in states]
+        transition_matrix[v] += [(q, q) for q in states]
     return transition_matrix
