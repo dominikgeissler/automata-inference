@@ -11,6 +11,8 @@ graphviz = "^0.21"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"
+pylint = "^4.0.0"
+mypy = "^1.18.2"
 
 [build-system]
 requires = ["poetry-core"]
