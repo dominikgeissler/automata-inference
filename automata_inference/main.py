@@ -1,6 +1,6 @@
-from automata_factory import PGAFactory
-from visualizer import visualize
-from program_statements import (
+from automata_inference.automata_factory import PGAFactory
+from automata_inference.visualizer import visualize
+from automata_inference.program_statements import (
     SequentialCompositionStatement,
     CoinflipStatement,
     SetToZeroStatement,
@@ -9,8 +9,8 @@ from program_statements import (
     IncrementDistributionStatement,
     ObserveStatement,
 )
-from guards import EqGuard, GeqGuard
-from distributions import NegBinomialDistribution
+from automata_inference.guards import EqGuard, GeqGuard
+from automata_inference.distributions import NegBinomialDistribution
 
 program = SequentialCompositionStatement(
     lhs=CoinflipStatement(
@@ -37,5 +37,5 @@ print(program)
 
 visualize(PGAFactory.dirac("X", 1).substitute("X", 0), view=True)
 input_pga = PGAFactory.one()
-#out = program.apply_semantics(input_pga)
-#visualize(out, view=True)
+out = program.apply_semantics(input_pga)
+visualize(out, view=True)

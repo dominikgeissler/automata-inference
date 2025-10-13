@@ -8,16 +8,15 @@ CONSTANT_KEY = 1
 class Automaton(ABC):
     """Represents the abstract notion of an automaton."""
 
-    def __init__(
-        self, states: set[str], transition_matrix: dict[tuple], initial: set, final: set
-    ):
+    def __init__(self, states: set[str], transition_matrix: dict[tuple], initial: set, final: set):
         self.states = states
         self.transition_matrix = transition_matrix
         self.initial = initial
         self.final = final
 
     def __str__(self):
-        return f"States: {self.states}, Transition matrix: {self.transition_matrix}, Initial: {self.initial}, Final: {self.final}"
+        return f"States: {self.states}, Transition matrix: {self.transition_matrix}, " + \
+            f"Initial: {self.initial}, Final: {self.final}"
 
     def __eq__(self, value):
         if not isinstance(value, Automaton):
@@ -46,6 +45,8 @@ class DFA(Automaton):
 
 
 class PGA(Automaton):
+    """A PGA (probability generating automaton). Instantiation of Automaton."""
+
     def __init__(
         self,
         states,
@@ -53,9 +54,14 @@ class PGA(Automaton):
         initial: set[tuple[float, str]],
         final: set[tuple[float, str]],
     ):
-        return super().__init__(states, transition_matrix, initial, final)
+        super().__init__(states, transition_matrix, initial, final)
 
     def get_probability_mass(self) -> float:
+        """Calculates the probability mass of the PGA.
+
+        Returns:
+            float: The probability mass of the PGA.
+        """
         raise NotImplementedError("todo")
 
     def substitute(self, indeterminate, value: int) -> "PGA":
@@ -68,14 +74,10 @@ class PGA(Automaton):
         Returns:
             PGA: The substitution PGA A[X/i].
         """
-        assert value in {0, 1}, (
-            f"Substitution is only supported for 0 or 1, got {value}"
-        )
+        assert value in {0, 1}, f"Substitution is only supported for 0 or 1, got {value}"
         new_transition_matrix = self.transition_matrix.copy()
         new_transition_matrix[indeterminate] = []
-        new_transition_matrix[CONSTANT_KEY].extend(
-            self.transition_matrix[indeterminate] if value == 1 else []
-        )
+        new_transition_matrix[CONSTANT_KEY].extend(self.transition_matrix[indeterminate] if value == 1 else [])
         return PGA(self.states, new_transition_matrix, self.initial, self.final)
 
     def concat(self, other: "PGA") -> "PGA":
@@ -88,28 +90,20 @@ class PGA(Automaton):
             PGA: The resulting PGA A_1 * A_2.
         """
         other = resolve_conflict(self, other)
-        new_transition_matrix = dict()
+        new_transition_matrix = {}
         for k in self.transition_matrix.keys() | other.transition_matrix.keys():
-            new_transition_matrix[k] = (
-                self.transition_matrix[k] + other.transition_matrix[k]
-            )
+            new_transition_matrix[k] = self.transition_matrix[k] + other.transition_matrix[k]
         if CONSTANT_KEY in new_transition_matrix:
             new_transition_matrix[CONSTANT_KEY] += [
                 (c1 * c2, from_state, to_state)
-                for ((c1, from_state), (c2, to_state)) in set(
-                    itertools.product(self.final, other.initial)
-                )
+                for ((c1, from_state), (c2, to_state)) in set(itertools.product(self.final, other.initial))
             ]
         else:
             new_transition_matrix[CONSTANT_KEY] = [
                 (c1 * c2, from_state, to_state)
-                for ((c1, from_state), (c2, to_state)) in set(
-                    itertools.product(self.final, other.initial)
-                )
+                for ((c1, from_state), (c2, to_state)) in set(itertools.product(self.final, other.initial))
             ]
-        return PGA(
-            self.states | other.states, new_transition_matrix, self.initial, other.final
-        )
+        return PGA(self.states | other.states, new_transition_matrix, self.initial, other.final)
 
     def weighted_union(self, other: "PGA", p: float, q: float) -> "PGA":
         """Constructs the disjoint weighted union automaton, given a PGA and two weights p,q.
@@ -122,18 +116,14 @@ class PGA(Automaton):
         Returns:
             PGA: The resulting PGA A_1 p^+^q A_2.
         """
-        assert is_probability(p) and is_probability(q), (
-            f"p and q have to be between 0 and 1 , got {p=} and {q=}"
-        )
+        assert 0 <= p <= 1 and 0 <= q <= 1, f"p and q have to be between 0 and 1 , got {p=} and {q=}"
         other = resolve_conflict(self, other)
-        new_initial = {(p * c, state) for (c, state) in self.initial} | {
-            (q * c, state) for (c, state) in other.initial
-        }
-        new_transition_matrix = dict()
+        new_initial = {(p * c, state) for (c, state) in self.initial} | {(q * c, state) for (c, state) in other.initial}
+        new_transition_matrix = {}
         for k in self.transition_matrix.keys() | other.transition_matrix.keys():
-            new_transition_matrix[k] = (
-                self.transition_matrix[k] if k in self.transition_matrix else []
-            ) + (other.transition_matrix[k] if k in other.transition_matrix else [])
+            new_transition_matrix[k] = (self.transition_matrix[k] if k in self.transition_matrix else []) + (
+                other.transition_matrix[k] if k in other.transition_matrix else []
+            )
         return PGA(
             self.states | other.states,
             new_transition_matrix,
@@ -152,7 +142,7 @@ class PGA(Automaton):
         """
         other = resolve_conflict(self, other)
         new_states = {f"({q1},{q2})" for q1 in self.states for q2 in other.states}
-        new_transition_matrix = dict()
+        new_transition_matrix = {}
         for v in self.transition_matrix.keys():
             s_trans = self.transition_matrix[v]
             o_trans = other.transition_matrix[v]
@@ -161,16 +151,8 @@ class PGA(Automaton):
                 for (c, state1, state3) in s_trans
                 for (state2, state4) in o_trans
             ]
-        new_initial = set(
-            (c, f"({state1},{state2})")
-            for (c, state1) in self.initial
-            for state2 in other.initial
-        )
-        new_final = set(
-            (c, f"({state1},{state2})")
-            for (c, state1) in self.final
-            for state2 in other.final
-        )
+        new_initial = set((c, f"({state1},{state2})") for (c, state1) in self.initial for state2 in other.initial)
+        new_final = set((c, f"({state1},{state2})") for (c, state1) in self.final for state2 in other.final)
         return minimize(PGA(new_states, new_transition_matrix, new_initial, new_final))
 
     def transition_substitution(self, indeterminate, other: "PGA") -> "PGA":
@@ -184,9 +166,7 @@ class PGA(Automaton):
             PGA: The PGA A_1[Y/A_2].
         """
         indet_trans = self.transition_matrix[indeterminate]
-        new_states = set(
-            [f"{q}_{i}" for q in other.states for i in range(len(indet_trans))]
-        )
+        new_states = {f"{q}_{i}" for q in other.states for i in range(len(indet_trans))}
         other = resolve_conflict(self, other)
 
         new_transition_matrix = self.transition_matrix.copy()
@@ -205,26 +185,24 @@ class PGA(Automaton):
                 for i in range(len(indet_trans))
                 for c, q in other.initial
             ]
-            + [
-                (c, f"{q}_{i}", indet_trans[i][2])
-                for c, q in other.final
-                for i in range(len(indet_trans))
-            ]
+            + [(c, f"{q}_{i}", indet_trans[i][2]) for c, q in other.final for i in range(len(indet_trans))]
         )
-        return PGA(
-            self.states | new_states, new_transition_matrix, self.initial, self.final
-        )
+        return PGA(self.states | new_states, new_transition_matrix, self.initial, self.final)
 
-    def decrement(self, indeterminate) -> "PGA":
+    def decrement(self, indeterminate: str) -> "PGA":
+        """Creates the decrement automaton for monus.
+
+        Args:
+            indeterminate (str): The indeterminate whose value should be decremented.
+
+        Returns:
+            PGA: The resulting decrement automaton.
+        """
         dfa_filter = resolve_conflict(self, DFAFactory.neg(DFAFactory.lt("X", 1)))
         filtered = self.product(dfa_filter)
         subs_zero = self.substitute("X", 0)
-        dfa_s, dfa_t = [
-            el for el in dfa_filter.transition_matrix[indeterminate] if el[0] != el[1]
-        ][0]
-        new_transition_matrix: dict[str, list[tuple[float, str, str]]] = (
-            filtered.transition_matrix.copy()
-        )
+        dfa_s, dfa_t = [el for el in dfa_filter.transition_matrix[indeterminate] if el[0] != el[1]][0]
+        new_transition_matrix: dict[str, list[tuple[float, str, str]]] = filtered.transition_matrix.copy()
         for trans in new_transition_matrix[indeterminate]:
             w, s, t = trans
             last_state_s, last_state_t = (
@@ -238,8 +216,8 @@ class PGA(Automaton):
 
 
 def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
-    """Checks for disjoint state sets and, if not disjoint, renames the states of the second automaton for the state sets to be disjoint
-    (Also changes the transition matrix and initial / final state sets).
+    """Checks for disjoint state sets and, if not disjoint, renames the states of the second automaton for the state 
+    sets to be disjoint. (Also changes the transition matrix and initial / final state sets).
 
     Args:
         a1 (Automaton): The first automaton.
@@ -259,15 +237,19 @@ def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
 
     rename_map = {s: s + suffix for s in a2.states}
 
-    def rename_set(S):
+    def rename_set(some_set: set[str]) -> set[str]:
+        """Renames a set by some map. Handles both weighted and unweighted cases.
+
+        Args:
+            some_set (set[str]): The set to be renamed.
+
+        Returns:
+            set[str]: The renamed set.
+        """
         # handle weighted and unweighted case
         renamed = set()
-        for elem in S:
-            if (
-                isinstance(elem, tuple)
-                and len(elem) == 2
-                and not isinstance(elem[0], str)
-            ):
+        for elem in some_set:
+            if isinstance(elem, tuple) and len(elem) == 2 and not isinstance(elem[0], str):
                 # (weight, state)
                 w, s = elem
                 renamed.add((w, rename_map.get(s, s)))
@@ -325,11 +307,7 @@ def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
     is_pga = isinstance(aut, PGA)
 
     def get_state(possible_weighted_state):
-        return (
-            possible_weighted_state[1]
-            if isinstance(possible_weighted_state, tuple)
-            else possible_weighted_state
-        )
+        return possible_weighted_state[1] if isinstance(possible_weighted_state, tuple) else possible_weighted_state
 
     successors = {q: set() for q in aut.states}
     predecessors = {q: set() for q in aut.states}
@@ -364,7 +342,7 @@ def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
     if not keep:
         return PGAFactory.zero()
 
-    new_transition_matrix = dict()
+    new_transition_matrix = {}
     aut.states = keep
     for indeterminate, transitions in aut.transition_matrix.items():
         keep_trans = []
@@ -389,15 +367,16 @@ def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
     return aut
 
 
-def merge_states(aut: PGA):
+def merge_states(aut: PGA) -> PGA:
+    """Minimizes the automaton by merging states.
+
+    Args:
+        aut (PGA): The PGA to be minimized.
+
+    Returns:
+        PGA: The resulting minimized PGA.
+    """
     return aut
-    if is_minimal(aut):
-        return aut
-    pass
-
-
-def is_minimal(aut: PGA):
-    return len(aut.transition_matrix[CONSTANT_KEY]) == 0
 
 
 # -- Factory --
@@ -406,34 +385,54 @@ def is_minimal(aut: PGA):
 class PGAFactory:
     """Constructs distribution PGAs."""
 
-    def __init__(self, variables):
-        self.variables = variables
-
     @classmethod
-    def zero(self):
+    def zero(cls) -> PGA:
+        """Returns the PGA encoding the zero subdistribution.
+
+        Returns:
+            PGA: The PGA encoding the zero subdistribtion.
+        """
         return PGA({"q_0"}, dict({v: [] for v in VARIABLES}), {(1, "q_0")}, set())
 
     @classmethod
-    def one(self):
-        return PGA(
-            {"q_0"}, dict({v: [] for v in VARIABLES}), {(1, "q_0")}, {(1, "q_0")}
-        )
+    def one(cls) -> PGA:
+        """Returns the PGA encoding the one distribution.
+
+        Returns:
+            PGA: The PGA encoding the one distribution,
+        """
+        return PGA({"q_0"}, dict({v: [] for v in VARIABLES}), {(1, "q_0")}, {(1, "q_0")})
 
     # --- Distributions ---
     @classmethod
-    def geometric(self, indeterminate, p) -> PGA:
+    def geometric(cls, indeterminate: str, p: float) -> PGA:
+        """Returns the PGA encoding the geometric distribution for indeterminate `indeterminate` with parameter `p`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            p (float): The parameter (probability).
+
+        Returns:
+            PGA: The PGA encoding the geometric distribution.
+        """
         return PGA(
             {"q_0"},
-            dict(
-                {indeterminate: [(1 - p, "q_0", "q_0")]}
-                | {v: [] for v in VARIABLES - {indeterminate}}
-            ),
+            dict({indeterminate: [(1 - p, "q_0", "q_0")]} | {v: [] for v in VARIABLES - {indeterminate}}),
             {(1, "q_0")},
             {(p, "q_0")},
         )
 
     @classmethod
-    def dirac(self, indeterminate, n: int) -> PGA:
+    def dirac(cls, indeterminate: str, n: int) -> PGA:
+        """Returns the PGA encoding the dirac disribution with indeterminate `indeterminate` and parameter `n`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            n (int): The parameter (natural number).
+
+        Returns:
+            PGA: The PGA encoding the dirac distribution.
+        """
         return PGA(
             {f"q_{i}" for i in range(n + 1)},
             dict(
@@ -445,7 +444,16 @@ class PGAFactory:
         )
 
     @classmethod
-    def uniform(self, indeterminate, n: int) -> PGA:
+    def uniform(cls, indeterminate: str, n: int) -> PGA:
+        """Returns the PGA encoding the uniform distribution with indeterminate `indeterminate` and parameter `n`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            n (int): The parameter (natural number).
+
+        Returns:
+            PGA: The PGA encoding the uniform distribution.
+        """
         return PGA(
             {f"q_{i}" for i in range(n)},
             dict(
@@ -457,21 +465,38 @@ class PGAFactory:
         )
 
     @classmethod
-    def bernoulli(self, indeterminate, p: float) -> PGA:
+    def bernoulli(cls, indeterminate: str, p: float) -> PGA:
+        """Returns the PGA encoding the bernoulli distribution with indeterminate `indeterminate` and parameter `p`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            p (float): The parameter (probability).
+
+        Returns:
+            PGA: The PGA encoding the bernoulli distribution.
+        """
         return PGA(
             {"q_0", "q_1"},
-            dict(
-                {indeterminate: [(p, "q_0", "q_1")]}
-                | {v: [] for v in VARIABLES - {indeterminate}}
-            ),
+            dict({indeterminate: [(p, "q_0", "q_1")]} | {v: [] for v in VARIABLES - {indeterminate}}),
             {(1, "q_0")},
             {(1 - p, "q_0"), (1, "q_1")},
         )
 
     @classmethod
-    def neg_binomial(self, indeterminate, n: int, p: float) -> PGA:
+    def neg_binomial(cls, indeterminate: str, n: int, p: float) -> PGA:
+        """Returns the PGA encoding the negative binomial distribution with indeterminate `indeterminate` and 
+        parameter `n` and `p`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            n (int): The parameter (natural number).
+            p (float): The parameter (probability).
+
+        Returns:
+            PGA: The PGA encoding the negative binomial distribution.
+        """
         assert n > 0, f"n has to be greater than 0, got {n=}"
-        assert is_probability(p), f"p has to be between 0 and 1, got {p=}"
+        assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
 
         aut = PGAFactory.geometric(indeterminate, p)
         for _ in range(n - 1):
@@ -484,7 +509,7 @@ class DFAFactory:
     """Constructs guard DFAs."""
 
     @classmethod
-    def lt(self, indeterminate: str, val: int) -> DFA:
+    def lt(cls, indeterminate: str, val: int) -> DFA:
         """The DFA encoding the less-than guard `indeterminate` < `val`.
 
         Args:
@@ -498,18 +523,15 @@ class DFAFactory:
         states = {f"p_{i}" for i in range(val + 1)}
         initial = {"p_0"}
         final = {f"p_{i}" for i in range(val)}
-        transition_matrix = dict()
-        transition_matrix[indeterminate] = [
-            (f"p_{i}", f"p_{i + 1}") for i in range(val)
-        ] + [(f"p_{val}", f"p_{val}")]
-        transition_matrix = reflexive_closure(
-            transition_matrix, VARIABLES - {indeterminate}, states
-        )
+        transition_matrix = {}
+        transition_matrix[indeterminate] = [(f"p_{i}", f"p_{i + 1}") for i in range(val)] + [(f"p_{val}", f"p_{val}")]
+        transition_matrix = reflexive_closure(transition_matrix, VARIABLES - {indeterminate}, states)
         return DFA(states, transition_matrix, initial, final)
 
     @classmethod
-    def mod(self, indeterminate: str, modulus: int, residue: int) -> DFA:
-        """The DFA encoding the modulus guard `indeterminate` mod `modulus` = `residue`. `modulus` has to be greater than `residue`.
+    def mod(cls, indeterminate: str, modulus: int, residue: int) -> DFA:
+        """The DFA encoding the modulus guard `indeterminate` mod `modulus` = `residue`. `modulus` has to be greater 
+        than `residue`.
 
         Args:
             indeterminate (str): The indeterminate.
@@ -523,18 +545,16 @@ class DFAFactory:
         states = {f"q_{i}" for i in range(modulus)}
         initial = {"q_0"}
         final = {f"q_{residue}"}
-        transition_matrix = dict()
-        transition_matrix[indeterminate] = [
-            (f"q_{i}", f"q_{i + 1}") for i in range(modulus - 1)
-        ] + [(f"q_{modulus - 1}", "q_0")]
-        transition_matrix = reflexive_closure(
-            transition_matrix, VARIABLES - {indeterminate}, states
-        )
+        transition_matrix = {}
+        transition_matrix[indeterminate] = [(f"q_{i}", f"q_{i + 1}") for i in range(modulus - 1)] + [
+            (f"q_{modulus - 1}", "q_0")
+        ]
+        transition_matrix = reflexive_closure(transition_matrix, VARIABLES - {indeterminate}, states)
         return DFA(states, transition_matrix, initial, final)
 
     # -------- Syntactic Sugar --------------
     @classmethod
-    def eq(self, indeterminate: str, val: int) -> DFA:
+    def eq(cls, indeterminate: str, val: int) -> DFA:
         """The DFA encoding the equality guard `indeterminate` = `val`.
 
         Args:
@@ -548,17 +568,15 @@ class DFAFactory:
         states = {f"p_{i}" for i in range(val + 2)}
         initial = {"p_0"}
         final = {f"p_{val}"}
-        transition_matrix = dict()
-        transition_matrix[indeterminate] = [
-            (f"p_{i}", f"p_{i + 1}") for i in range(val + 1)
-        ] + [(f"p_{val + 1}", f"p_{val + 1}")]
-        transition_matrix = reflexive_closure(
-            transition_matrix, VARIABLES - {indeterminate}, states
-        )
+        transition_matrix = {}
+        transition_matrix[indeterminate] = [(f"p_{i}", f"p_{i + 1}") for i in range(val + 1)] + [
+            (f"p_{val + 1}", f"p_{val + 1}")
+        ]
+        transition_matrix = reflexive_closure(transition_matrix, VARIABLES - {indeterminate}, states)
         return DFA(states, transition_matrix, initial, final)
 
     @classmethod
-    def neg(self, dfa: DFA) -> DFA:
+    def neg(cls, dfa: DFA) -> DFA:
         """The complement of a DFA.
 
         Args:
@@ -567,12 +585,10 @@ class DFAFactory:
         Returns:
             DFA: The complement of the DFA.
         """
-        return DFA(
-            dfa.states, dfa.transition_matrix, dfa.initial, dfa.states - dfa.final
-        )
+        return DFA(dfa.states, dfa.transition_matrix, dfa.initial, dfa.states - dfa.final)
 
     @classmethod
-    def land(self, dfa1: DFA, dfa2: DFA) -> DFA:
+    def land(cls, dfa1: DFA, dfa2: DFA) -> DFA:
         """Intersection of two DFAs.
 
         Args:
@@ -585,7 +601,7 @@ class DFAFactory:
         states = set(itertools.product(dfa1.states, dfa2.states))
         initial = set(itertools.product(dfa1.initial, dfa2.initial))
         final = set(itertools.product(dfa1.final, dfa2.final))
-        transition_matrix = dict()
+        transition_matrix = {}
         for v in VARIABLES:
             transition_matrix[v] = [
                 (f"({state1},{state2})", f"({state3},{state4})")
@@ -598,9 +614,7 @@ class DFAFactory:
 # ------- Helpers -------------
 
 
-def reflexive_closure(
-    transition_matrix: dict[str, tuple], variables: set[str], states: set[str]
-) -> dict[str, tuple]:
+def reflexive_closure(transition_matrix: dict[str, tuple], variables: set[str], states: set[str]) -> dict[str, tuple]:
     """Adds self-loops to every state with the provided variables.
 
     Args:
@@ -614,15 +628,3 @@ def reflexive_closure(
     for v in variables:
         transition_matrix[v] = [(q, q) for q in states]
     return transition_matrix
-
-
-def is_probability(p: float) -> bool:
-    """Checks whether a given float is a probability, i.e. between 0 and 1.
-
-    Args:
-        p (float): The supposed probability
-
-    Returns:
-        bool: A Boolean indicating whether p is a probability.
-    """
-    return 0 <= p and p <= 1

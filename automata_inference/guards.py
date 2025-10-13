@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
-from automata_factory import DFAFactory, DFA
-
+from automata_inference.automata_factory import DFAFactory, DFA
 
 class Guard(ABC):
+    """Models Boolean guards.
+    """
     @abstractmethod
     def to_dfa(self) -> DFA:
         """
         Converts the given guard to the DFA representation.
         """
-        pass
 
 
 class LtGuard(Guard):
@@ -16,7 +16,7 @@ class LtGuard(Guard):
     Less-than Guard.
     """
 
-    def __init__(self, indeterminate, n: int):
+    def __init__(self, indeterminate: str, n: int):
         """Creates a new LtGuard `indeterminate` < `n`.
 
         Args:
@@ -38,7 +38,7 @@ class ModGuard(Guard):
     Modulus guard.
     """
 
-    def __init__(self, indeterminate, modulus: int, residue: int):
+    def __init__(self, indeterminate: str, modulus: int, residue: int):
         """Creates a mew ModGuard `ìndeterminate` mod `modulus` = `residue`.
         Args:
             indeterminate (str): The indeterminate.
@@ -105,7 +105,8 @@ class LandGuard(Guard):
 
 
 class EqGuard(Guard):
-    def __init__(self, indeterminate, n):
+    """Represents the equality guard `indeterminate = n`"""
+    def __init__(self, indeterminate: str, n: int):
         self.indeterminate = indeterminate
         self.n = n
 
@@ -117,7 +118,8 @@ class EqGuard(Guard):
 
 
 class GeqGuard(Guard):
-    def __init__(self, indeterminate, n):
+    """Represents the geq-guard `indeterminate >= n`"""
+    def __init__(self, indeterminate: str, n: int):
         self.indeterminate = indeterminate
         self.n = n
 
@@ -129,7 +131,8 @@ class GeqGuard(Guard):
 
 
 class LeqGuard(Guard):
-    def __init__(self, indeterminate, n):
+    """Represents the leq-guard `indeterminate <= n`"""
+    def __init__(self, indeterminate: str, n: int):
         self.indeterminate = indeterminate
         self.n = n
 
@@ -141,7 +144,8 @@ class LeqGuard(Guard):
 
 
 class GtGuard(Guard):
-    def __init__(self, indeterminate, n):
+    """Represents the greater-than guard `indeterminate > n`"""
+    def __init__(self, indeterminate: str, n: int):
         self.indeterminate = indeterminate
         self.n = n
 
