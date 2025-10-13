@@ -19,6 +19,16 @@ class Automaton(ABC):
     def __str__(self):
         return f"States: {self.states}, Transition matrix: {self.transition_matrix}, Initial: {self.initial}, Final: {self.final}"
 
+    def __eq__(self, value):
+        if not isinstance(value, Automaton):
+            return False
+        return (
+            self.states == value.states
+            and self.transition_matrix == value.transition_matrix
+            and self.initial == value.initial
+            and self.final == value.final
+        )
+
 
 class DFA(Automaton):
     """
@@ -44,9 +54,9 @@ class PGA(Automaton):
         final: set[tuple[float, str]],
     ):
         return super().__init__(states, transition_matrix, initial, final)
-    
+
     def get_probability_mass(self) -> float:
-        raise NotImplementedError("todo")  
+        raise NotImplementedError("todo")
 
     def substitute(self, indeterminate, value: int) -> "PGA":
         """Substitutes a given indeterminate by some value in {0,1}
@@ -64,7 +74,7 @@ class PGA(Automaton):
         new_transition_matrix = self.transition_matrix.copy()
         new_transition_matrix[indeterminate] = []
         new_transition_matrix[CONSTANT_KEY].extend(
-            self.transition_matrix[indeterminate]
+            self.transition_matrix[indeterminate] if value == 1 else []
         )
         return PGA(self.states, new_transition_matrix, self.initial, self.final)
 
@@ -209,16 +219,23 @@ class PGA(Automaton):
         dfa_filter = resolve_conflict(self, DFAFactory.neg(DFAFactory.lt("X", 1)))
         filtered = self.product(dfa_filter)
         subs_zero = self.substitute("X", 0)
-        dfa_s, dfa_t = [el for el in dfa_filter.transition_matrix[indeterminate] if el[0] != el[1]][0]
-        new_transition_matrix: dict[str, list[tuple[float, str, str]]] = filtered.transition_matrix.copy()
+        dfa_s, dfa_t = [
+            el for el in dfa_filter.transition_matrix[indeterminate] if el[0] != el[1]
+        ][0]
+        new_transition_matrix: dict[str, list[tuple[float, str, str]]] = (
+            filtered.transition_matrix.copy()
+        )
         for trans in new_transition_matrix[indeterminate]:
             w, s, t = trans
-            last_state_s, last_state_t = s.split(",")[-1].split(")")[0], t.split(",")[-1].split(")")[0]
+            last_state_s, last_state_t = (
+                s.split(",")[-1].split(")")[0],
+                t.split(",")[-1].split(")")[0],
+            )
             if last_state_s == dfa_s and last_state_t == dfa_t:
                 new_transition_matrix[indeterminate].remove(trans)
                 new_transition_matrix[CONSTANT_KEY].append((w, s, t))
         return filtered.weighted_union(subs_zero, 1, 1)
-        
+
 
 def resolve_conflict(a1: Automaton, a2: Automaton) -> Automaton:
     """Checks for disjoint state sets and, if not disjoint, renames the states of the second automaton for the state sets to be disjoint
@@ -285,7 +302,7 @@ def minimize(aut: Automaton) -> Automaton:
     """Minimizes the given automaton by removing non-coaccessible states and merging redundant states.
 
     Args:
-        aut (Automaton): The automaton to be minimized. 
+        aut (Automaton): The automaton to be minimized.
 
     Returns:
         Automaton: The minimized automaton.
@@ -382,12 +399,13 @@ def merge_states(aut: PGA):
 def is_minimal(aut: PGA):
     return len(aut.transition_matrix[CONSTANT_KEY]) == 0
 
+
 # -- Factory --
 
 
 class PGAFactory:
-    """Constructs distribution PGAs.
-    """
+    """Constructs distribution PGAs."""
+
     def __init__(self, variables):
         self.variables = variables
 
@@ -463,8 +481,8 @@ class PGAFactory:
 
 
 class DFAFactory:
-    """Constructs guard DFAs.
-    """
+    """Constructs guard DFAs."""
+
     @classmethod
     def lt(self, indeterminate: str, val: int) -> DFA:
         """The DFA encoding the less-than guard `indeterminate` < `val`.
@@ -521,7 +539,7 @@ class DFAFactory:
 
         Args:
             indeterminate (str): The indeterminate.
-            val (int): The number the amount of indeterminates should be equal to. 
+            val (int): The number the amount of indeterminates should be equal to.
 
         Returns:
             DFA: The DFA encoding the guard.
@@ -579,7 +597,10 @@ class DFAFactory:
 
 # ------- Helpers -------------
 
-def reflexive_closure(transition_matrix: dict[str, tuple], variables: set[str], states: set[str]) -> dict[str, tuple]:
+
+def reflexive_closure(
+    transition_matrix: dict[str, tuple], variables: set[str], states: set[str]
+) -> dict[str, tuple]:
     """Adds self-loops to every state with the provided variables.
 
     Args:
@@ -593,6 +614,7 @@ def reflexive_closure(transition_matrix: dict[str, tuple], variables: set[str], 
     for v in variables:
         transition_matrix[v] = [(q, q) for q in states]
     return transition_matrix
+
 
 def is_probability(p: float) -> bool:
     """Checks whether a given float is a probability, i.e. between 0 and 1.
