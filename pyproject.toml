@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "automata-inference"
+version = "0.1.0"
+description = ""
+authors = ["Dominik <dominik.geissler@tu-berlin.de>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+graphviz = "^0.21"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

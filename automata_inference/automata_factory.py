@@ -47,7 +47,6 @@ class PGA(Automaton):
     
     def get_probability_mass(self) -> float:
         raise NotImplementedError("todo")  
-        return 0
 
     def substitute(self, indeterminate, value: int) -> "PGA":
         """Substitutes a given indeterminate by some value in {0,1}

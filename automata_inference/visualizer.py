@@ -6,7 +6,6 @@ def visualize(aut: Automaton, out_path="aut", view=False):
     dot = Digraph(comment="Automaton visualization")
 
     is_pga = isinstance(aut, PGA)
-
     if not is_pga:
         for state in aut.states:
             dot.node(state, shape="circle")
