@@ -588,7 +588,7 @@ class DFAFactory:
         transition_matrix = dict()
         for v in VARIABLES:
             transition_matrix[v] = [
-                (f"({state1}, {state2})", f"({state3}, {state4})")
+                (f"({state1},{state2})", f"({state3},{state4})")
                 for (state1, state3) in dfa1.transition_matrix[v]
                 for (state2, state4) in dfa2.transition_matrix
             ]
