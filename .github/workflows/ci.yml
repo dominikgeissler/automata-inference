@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: 3.12
+      - name: install poetry
+        run: |
+          sudo apt-get install -y python3-poetry
+      - name: setup project
+        run: |
+          poetry install --no-interaction
+      - name: linting
+        run: |
+          poetry run pylint automata_inference
+      - name: mypy
+        run: |
+          poetry run mypy automata_inference
+      - name: tests
+        run: |
+          poetry run pytest --exitfirst

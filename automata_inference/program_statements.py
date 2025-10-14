@@ -1,19 +1,30 @@
-from guards import Guard
-from distributions import Distribution, DiracDistribution
-from automata_factory import PGAFactory, DFAFactory, PGA
 from abc import ABC, abstractmethod
+
+from automata_inference.guards import Guard
+from automata_inference.distributions import Distribution, DiracDistribution
+from automata_inference.automata_factory import PGAFactory, DFAFactory, PGA
 
 
 class Statement(ABC):
+    """Represents a program statement."""
     @abstractmethod
     def apply_semantics(self, pga: PGA) -> PGA:
-        pass
+        """Computes the semantics of the program statement.
+
+        Args:
+            pga (PGA): The input PGA.
+
+        Returns:
+            PGA: The result of the semantics.
+        """
 
 
 # Todo one assignment statement?
 
 
 class SetToZeroStatement(Statement):
+    """The set to zero statement `indeterminate := 0`.
+    """
     def __init__(self, indeterminate):
         self.indeterminate = indeterminate
 
@@ -26,6 +37,8 @@ class SetToZeroStatement(Statement):
 
 
 class IncrementConstantStatement(Statement):
+    """The increment constant statement `indeterminate += n`.
+    """
     def __init__(self, indeterminate, n: int):
         self.indeterminate = indeterminate
         self.n = n
@@ -42,6 +55,8 @@ class IncrementConstantStatement(Statement):
 
 
 class IncrementDistributionStatement(Statement):
+    """The increment distribution statement `indeterminate += distribution`.
+    """
     def __init__(self, indeterminate, distribution: Distribution):
         self.indeterminate = indeterminate
         self.distribution = distribution
@@ -55,6 +70,8 @@ class IncrementDistributionStatement(Statement):
 
 
 class IncrementVariableStatement(Statement):
+    """The increment variable statement `indeterminate_lhs += indeterminate_rhs`.
+    """
     def __init__(self, indeterminate_lhs, indeterminate_rhs):
         self.indeterminate_lhs = indeterminate_lhs
         self.indeterminate_rhs = indeterminate_rhs
@@ -73,6 +90,8 @@ class IncrementVariableStatement(Statement):
 
 
 class IidSamplingStatement(Statement):
+    """The iid statement `indeterminate_lhs += iid(distribution, indeterminate_rhs)`.
+    """
     def __init__(
         self, indeterminate_lhs, distribution: Distribution, indeterminate_rhs
     ):
@@ -94,8 +113,10 @@ class IidSamplingStatement(Statement):
 
 
 class CoinflipStatement(Statement):
+    """The coinflip statement `{ lhs } [p] { rhs }`.
+    """
     def __init__(self, lhs: Statement, p: float, rhs: Statement):
-        assert 0 <= p and p <= 1, f"p has to be between 0 and 1, got {p=}"
+        assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.lhs = lhs
         self.p = p
         self.rhs = rhs
@@ -111,6 +132,8 @@ class CoinflipStatement(Statement):
 
 
 class IfStatement(Statement):
+    """The if statement `if(guard) { then_statenent } else { else_statement }`.
+    """
     def __init__(
         self, guard: Guard, then_statement: Statement, else_statement: Statement
     ):
@@ -133,6 +156,8 @@ class IfStatement(Statement):
 
 
 class MonusStatement(Statement):
+    """The monus statement `indeterminate--`.
+    """
     def __init__(self, indeterminate):
         self.indeterminate = indeterminate
 
@@ -144,6 +169,8 @@ class MonusStatement(Statement):
 
 
 class ObserveStatement(Statement):
+    """The observe statement `observe(guard)`.
+    """
     def __init__(self, guard: Guard):
         self.guard = guard
 
@@ -156,6 +183,8 @@ class ObserveStatement(Statement):
 
 
 class SequentialCompositionStatement(Statement):
+    """The sequential composion `lhs;rhs`.
+    """
     def __init__(self, lhs: Statement, rhs: Statement):
         self.lhs = lhs
         self.rhs = rhs
@@ -163,6 +192,6 @@ class SequentialCompositionStatement(Statement):
     def apply_semantics(self, pga: PGA) -> PGA:
         print(f"Calculating {str(self)}...")
         return self.rhs.apply_semantics(self.lhs.apply_semantics(pga))
-    
+
     def __str__(self):
         return str(self.lhs) + ";" + str(self.rhs)

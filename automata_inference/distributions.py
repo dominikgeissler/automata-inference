@@ -1,11 +1,17 @@
-from automata_factory import PGAFactory, PGA
 from abc import abstractmethod, ABC
+from automata_inference.automata_factory import PGAFactory, PGA
 
 
 class Distribution(ABC):
+    """Models the abstract distribution."""
+
     @abstractmethod
     def to_pga(self) -> PGA:
-        pass
+        """Transforms a distribution to the corresponding PGA.
+
+        Returns:
+            PGA: The PGA which encodes the distribution
+        """
 
 
 class BernoulliDistribution(Distribution):
@@ -13,8 +19,8 @@ class BernoulliDistribution(Distribution):
     Represents the bernoulli distribution.
     """
 
-    def __init__(self, indeterminate, p: float):
-        assert 0 <= p and p <= 1, f"p has to be between 0 and 1, got {p=}"
+    def __init__(self, indeterminate: str, p: float):
+        assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.indeterminate = indeterminate
         self.p = p
 
@@ -26,9 +32,11 @@ class BernoulliDistribution(Distribution):
 
 
 class NegBinomialDistribution(Distribution):
-    def __init__(self, indeterminate, n: int, p: float):
+    """Represents the negative binomial distribution."""
+
+    def __init__(self, indeterminate: str, n: int, p: float):
         assert n > 0, f"n has to be greater than 0, got {n=}"
-        assert 0 <= p and p <= 1, f"p has to be between 0 and 1, got {p=}"
+        assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.indeterminate = indeterminate
         self.n = n
         self.p = p
@@ -41,8 +49,10 @@ class NegBinomialDistribution(Distribution):
 
 
 class GeometricDistribution(Distribution):
-    def __init__(self, indeterminate, p: float):
-        assert 0 <= p and p <= 1, f"p has to be between 0 and 1, got {p=}"
+    """Represents the geometric distribution."""
+
+    def __init__(self, indeterminate: str, p: float):
+        assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.indeterminate = indeterminate
         self.p = p
 
@@ -54,7 +64,9 @@ class GeometricDistribution(Distribution):
 
 
 class UniformDistribution(Distribution):
-    def __init__(self, indeterminate, n: int):
+    """Represents the uniform distribution."""
+
+    def __init__(self, indeterminate: str, n: int):
         assert n > 0, f"n has to be greater than 0, got {n=}"
         self.indeterminate = indeterminate
         self.n = n
@@ -67,7 +79,9 @@ class UniformDistribution(Distribution):
 
 
 class DiracDistribution(Distribution):
-    def __init__(self, indeterminate, n: int):
+    """Represents the dirac distribution."""
+
+    def __init__(self, indeterminate: str, n: int):
         assert n >= 0, f"n has to be at least 0, got {n=}"
         self.indeterminate = indeterminate
         self.n = n

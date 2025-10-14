@@ -1,0 +1,17 @@
+[MASTER]
+ignore=
+load-plugins=
+
+[MESSAGES CONTROL]
+disable=missing-module-docstring,
+    too-few-public-methods,
+    fixme,
+    too-many-locals,
+    too-many-branches
+
+
+[FORMAT]
+max-line-length=120
+
+[MISCELLANEOUS]
+notes=FIXME,TODO,todo
