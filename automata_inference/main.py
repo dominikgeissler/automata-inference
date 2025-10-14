@@ -1,3 +1,4 @@
+from symengine import Rational
 from automata_inference.automata_factory import PGAFactory
 from automata_inference.visualizer import visualize
 from automata_inference.program_statements import (
@@ -15,7 +16,7 @@ from automata_inference.distributions import NegBinomialDistribution
 program = SequentialCompositionStatement(
     lhs=CoinflipStatement(
         lhs=SetToZeroStatement("Y"),
-        p=0.9,
+        p=Rational(9, 10),
         rhs=SequentialCompositionStatement(
             lhs=SetToZeroStatement("Y"), rhs=IncrementConstantStatement("Y", 1)
         ),
@@ -24,10 +25,10 @@ program = SequentialCompositionStatement(
         lhs=IfStatement(
             guard=EqGuard("Y", 0),
             then_statement=IncrementDistributionStatement(
-                "X", NegBinomialDistribution("X", 1, 0.5)
+                "X", NegBinomialDistribution("X", 1, Rational(1, 2))
             ),
             else_statement=IncrementDistributionStatement(
-                "X", NegBinomialDistribution("X", 2, 0.5)
+                "X", NegBinomialDistribution("X", 2, Rational(1, 2))
             ),
         ),
         rhs=ObserveStatement(guard=GeqGuard("X", 2)),
@@ -39,3 +40,4 @@ input_pga = PGAFactory.one()
 out = program.apply_semantics(input_pga)
 
 visualize(out, "bla", view=True)
+print(out)
