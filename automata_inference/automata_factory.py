@@ -430,7 +430,7 @@ class PGAFactory:
         Returns:
             PGA: The PGA encoding the zero subdistribtion.
         """
-        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(1, "q_0")}, set())
+        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(Rational(1,1), "q_0")}, set())
 
     @classmethod
     def one(cls) -> PGA:
@@ -439,7 +439,7 @@ class PGAFactory:
         Returns:
             PGA: The PGA encoding the one distribution,
         """
-        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(1, "q_0")}, {(1, "q_0")})
+        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(Rational(1,1), "q_0")}, {(Rational(1,1), "q_0")})
 
     # --- Distributions ---
     @classmethod
@@ -456,7 +456,7 @@ class PGAFactory:
         return PGA(
             {"q_0"},
             {indeterminate: [(1 - p, "q_0", "q_0")]} | {v: [] for v in VARIABLES - {indeterminate}},
-            {(1, "q_0")},
+            {(Rational(1,1), "q_0")},
             {(p, "q_0")},
         )
 
@@ -475,8 +475,8 @@ class PGAFactory:
             {f"q_{i}" for i in range(n + 1)},
             {indeterminate: [(Rational(1, 1), f"q_{i}", f"q_{i + 1}") for i in range(n)]}
             | {v: [] for v in VARIABLES - {indeterminate}},
-            {(1, "q_0")},
-            {(1, f"q_{n}")},
+            {(Rational(1,1), "q_0")},
+            {(Rational(1,1), f"q_{n}")},
         )
 
     @classmethod
@@ -494,8 +494,8 @@ class PGAFactory:
             {f"q_{i}" for i in range(n)},
             {indeterminate: [(Rational(1, 1), f"q_{i}", f"q_{i + 1}") for i in range(n - 1)]}
             | {v: [] for v in VARIABLES - {indeterminate}},
-            {(1, "q_0")},
-            {(1 / n, f"q_{i}") for i in range(n)},
+            {(Rational(1,1), "q_0")},
+            {(Rational(1, n), f"q_{i}") for i in range(n)},
         )
 
     @classmethod
@@ -512,8 +512,8 @@ class PGAFactory:
         return PGA(
             {"q_0", "q_1"},
             {indeterminate: [(p, "q_0", "q_1")]} | {v: [] for v in VARIABLES - {indeterminate}},
-            {(1, "q_0")},
-            {(1 - p, "q_0"), (1, "q_1")},
+            {(Rational(1,1), "q_0")},
+            {(1 - p, "q_0"), (Rational(1,1), "q_1")},
         )
 
     @classmethod
