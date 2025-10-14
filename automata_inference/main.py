@@ -8,7 +8,7 @@ from automata_inference.program_statements import (
     IncrementConstantStatement,
     IfStatement,
     IncrementDistributionStatement,
-    ObserveStatement,
+    ObserveStatement
 )
 from automata_inference.guards import EqGuard, GeqGuard
 from automata_inference.distributions import NegBinomialDistribution
@@ -34,6 +34,7 @@ program = SequentialCompositionStatement(
         rhs=ObserveStatement(guard=GeqGuard("X", 2)),
     ),
 )
+
 print(program)
 input_pga = PGAFactory.one()
 
