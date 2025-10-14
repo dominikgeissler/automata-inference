@@ -34,8 +34,8 @@ program = SequentialCompositionStatement(
     ),
 )
 print(program)
-
-visualize(PGAFactory.dirac("X", 1).substitute("X", 0), view=True)
 input_pga = PGAFactory.one()
+
 out = program.apply_semantics(input_pga)
-visualize(out, view=True)
+
+visualize(out, "bla", view=True)

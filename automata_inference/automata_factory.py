@@ -569,7 +569,7 @@ class DFAFactory:
         states = {f"p_{i}" for i in range(val + 1)}
         initial = {"p_0"}
         final = {f"p_{i}" for i in range(val)}
-        transition_matrix = {}
+        transition_matrix: dict[str, list[tuple[str, str]]] = {v: [] for v in VARIABLES}
         transition_matrix[indeterminate] = [(f"p_{i}", f"p_{i + 1}") for i in range(val)] + [(f"p_{val}", f"p_{val}")]
         transition_matrix = reflexive_closure(transition_matrix, VARIABLES - {indeterminate}, states)
         return DFA(states, transition_matrix, initial, final)
@@ -591,7 +591,7 @@ class DFAFactory:
         states = {f"q_{i}" for i in range(modulus)}
         initial = {"q_0"}
         final = {f"q_{residue}"}
-        transition_matrix = {}
+        transition_matrix: dict[str, list[tuple[str, str]]] = {v: [] for v in VARIABLES}
         transition_matrix[indeterminate] = [(f"q_{i}", f"q_{i + 1}") for i in range(modulus - 1)] + [
             (f"q_{modulus - 1}", "q_0")
         ]
@@ -614,7 +614,7 @@ class DFAFactory:
         states = {f"p_{i}" for i in range(val + 2)}
         initial = {"p_0"}
         final = {f"p_{val}"}
-        transition_matrix = {}
+        transition_matrix: dict[str, list[tuple[str, str]]] = {v: [] for v in VARIABLES}
         transition_matrix[indeterminate] = [(f"p_{i}", f"p_{i + 1}") for i in range(val + 1)] + [
             (f"p_{val + 1}", f"p_{val + 1}")
         ]

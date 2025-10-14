@@ -2,8 +2,10 @@ from graphviz import Digraph
 
 from automata_inference.automata_factory import Automaton, PGA
 
+CONSTANT_KEY = "1"
 
-def visualize(aut: Automaton, out_path="aut", view=False):
+
+def visualize(aut: Automaton, out_path="aut", view=True):
     """Visualizes the given automaton.
 
     Args:
@@ -22,7 +24,6 @@ def visualize(aut: Automaton, out_path="aut", view=False):
 
     if is_pga:
         for weight, state in aut.initial:
-            print(state)
             dot.node(f"init_{state}", label="", shape="point")
             dot.edge(f"init_{state}", state, label=str(weight))
 
@@ -32,7 +33,6 @@ def visualize(aut: Automaton, out_path="aut", view=False):
 
     else:
         for state in aut.initial:
-            print(state)
             dot.node(f"init_{state}", label="", shape="point")
             dot.edge(f"init_{state}", state)
 
@@ -43,11 +43,11 @@ def visualize(aut: Automaton, out_path="aut", view=False):
         for trans in transitions:
             if is_pga:
                 weight, s, t = trans
-                label = f"{weight}{indeterminate}" if indeterminate != 1 else str(weight)
+                label = f"{weight}{indeterminate}" if indeterminate != CONSTANT_KEY else str(weight)
 
             else:
                 s, t = trans
-                label = indeterminate if indeterminate != 1 else ""
+                label = indeterminate if indeterminate != CONSTANT_KEY else ""
 
             dot.edge(s, t, label=label)
 
