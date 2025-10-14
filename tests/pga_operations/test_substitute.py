@@ -1,6 +1,6 @@
 from automata_inference.automata_factory import PGAFactory
 
-CONSTANT_KEY = 1
+CONSTANT_KEY = "1"
 
 class TestOneSubs:
     def test_zero_pga(self):
