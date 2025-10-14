@@ -1,4 +1,7 @@
 from abc import abstractmethod, ABC
+
+from symengine import Rational
+
 from automata_inference.automata_factory import PGAFactory, PGA
 
 
@@ -19,7 +22,7 @@ class BernoulliDistribution(Distribution):
     Represents the bernoulli distribution.
     """
 
-    def __init__(self, indeterminate: str, p: float):
+    def __init__(self, indeterminate: str, p: Rational):
         assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.indeterminate = indeterminate
         self.p = p
@@ -34,7 +37,7 @@ class BernoulliDistribution(Distribution):
 class NegBinomialDistribution(Distribution):
     """Represents the negative binomial distribution."""
 
-    def __init__(self, indeterminate: str, n: int, p: float):
+    def __init__(self, indeterminate: str, n: int, p: Rational):
         assert n > 0, f"n has to be greater than 0, got {n=}"
         assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.indeterminate = indeterminate
@@ -51,7 +54,7 @@ class NegBinomialDistribution(Distribution):
 class GeometricDistribution(Distribution):
     """Represents the geometric distribution."""
 
-    def __init__(self, indeterminate: str, p: float):
+    def __init__(self, indeterminate: str, p: Rational):
         assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.indeterminate = indeterminate
         self.p = p

@@ -4,6 +4,8 @@ import itertools
 from abc import ABC, abstractmethod
 from typing import TypeVar
 
+from symengine import Rational
+
 CONSTANT_KEY = "1"
 VARIABLES = {"X", "Y", "Z", CONSTANT_KEY}
 
@@ -69,20 +71,20 @@ class PGA(Automaton):
     def __init__(
         self,
         states: set[str],
-        transition_matrix: dict[str, list[tuple[float, str, str]]],
-        initial: set[tuple[float, str]],
-        final: set[tuple[float, str]],
+        transition_matrix: dict[str, list[tuple[Rational, str, str]]],
+        initial: set[tuple[Rational, str]],
+        final: set[tuple[Rational, str]],
     ):
         self.states = states
         self.transition_matrix = transition_matrix
         self.initial = initial
         self.final = final
 
-    def get_probability_mass(self) -> float:
+    def get_probability_mass(self) -> Rational:
         """Calculates the probability mass of the PGA.
 
         Returns:
-            float: The probability mass of the PGA.
+            Rational: The probability mass of the PGA.
         """
         raise NotImplementedError("todo")
 
@@ -127,13 +129,13 @@ class PGA(Automaton):
             ]
         return PGA(self.states | other.states, new_transition_matrix, self.initial, other.final)
 
-    def weighted_union(self, other: PGA, p: float, q: float) -> PGA:
+    def weighted_union(self, other: PGA, p: Rational, q: Rational) -> PGA:
         """Constructs the disjoint weighted union automaton, given a PGA and two weights p,q.
 
         Args:
             other (PGA): The other PGA the weighted union should be constructed with,
-            p (float): The left weight (0 <= p <= 1)
-            q (float): The right weight (0 <= q <= 1)
+            p (Rational): The left weight (0 <= p <= 1)
+            q (Rational): The right weight (0 <= q <= 1)
 
         Returns:
             PGA: The resulting PGA A_1 p^+^q A_2.
@@ -224,7 +226,7 @@ class PGA(Automaton):
         filtered = self.product(dfa_filter)
         subs_zero = self.substitute("X", 0)
         dfa_s, dfa_t = [el for el in dfa_filter.transition_matrix[indeterminate] if el[0] != el[1]][0]
-        new_transition_matrix: dict[str, list[tuple[float, str, str]]] = filtered.transition_matrix.copy()
+        new_transition_matrix: dict[str, list[tuple[Rational, str, str]]] = filtered.transition_matrix.copy()
         for trans in new_transition_matrix[indeterminate]:
             w, s, t = trans
             last_state_s, last_state_t = (
@@ -270,21 +272,21 @@ def resolve_conflict(a1: Automaton, a2: T) -> T:
         """
         return {rename_map.get(s, s) for s in some_set}
 
-    def rename_weighted_set(some_set: set[tuple[float, str]]) -> set[tuple[float, str]]:
+    def rename_weighted_set(some_set: set[tuple[Rational, str]]) -> set[tuple[Rational, str]]:
         """Renames a weighted set by some map.
         
         Args:
             some_set (set[str]): The set to be renamed.
 
         Returns:
-            set[tuple[float, str]]: The renamed set.
+            set[tuple[Rational, str]]: The renamed set.
         """
         return {(w, rename_map.get(s, s)) for w, s in some_set}
 
     new_transition_matrix_weighted = {}
     new_transition_matrix_unweighted = {}
     for indeterminate, transitions in a2.transition_matrix.items():
-        new_entries_weighted: list[tuple[float, str, str]] = []
+        new_entries_weighted: list[tuple[Rational, str, str]] = []
         new_entries_unweighted: list[tuple[str, str]] = []
         for entry in transitions:
             if len(entry) == 2:
@@ -380,7 +382,7 @@ def remove_noncoaccessible_states(aut: T) -> T:
     new_transition_matrix = {}
     aut.states = keep
     for indeterminate, transitions in aut.transition_matrix.items():
-        keep_trans_weighted: list[tuple[float, str, str]] = []
+        keep_trans_weighted: list[tuple[Rational, str, str]] = []
         keep_trans_unweighted: list[tuple[str, str]] = []
         for trans in transitions:
             if is_pga:
@@ -441,12 +443,12 @@ class PGAFactory:
 
     # --- Distributions ---
     @classmethod
-    def geometric(cls, indeterminate: str, p: float) -> PGA:
+    def geometric(cls, indeterminate: str, p: Rational) -> PGA:
         """Returns the PGA encoding the geometric distribution for indeterminate `indeterminate` with parameter `p`.
 
         Args:
             indeterminate (str): The indeterminate.
-            p (float): The parameter (probability).
+            p (Rational): The parameter (probability).
 
         Returns:
             PGA: The PGA encoding the geometric distribution.
@@ -471,7 +473,7 @@ class PGAFactory:
         """
         return PGA(
             {f"q_{i}" for i in range(n + 1)},
-            {indeterminate: [(1.0, f"q_{i}", f"q_{i + 1}") for i in range(n)]}
+            {indeterminate: [(Rational(1, 1), f"q_{i}", f"q_{i + 1}") for i in range(n)]}
             | {v: [] for v in VARIABLES - {indeterminate}},
             {(1, "q_0")},
             {(1, f"q_{n}")},
@@ -490,19 +492,19 @@ class PGAFactory:
         """
         return PGA(
             {f"q_{i}" for i in range(n)},
-            {indeterminate: [(1.0, f"q_{i}", f"q_{i + 1}") for i in range(n - 1)]}
+            {indeterminate: [(Rational(1, 1), f"q_{i}", f"q_{i + 1}") for i in range(n - 1)]}
             | {v: [] for v in VARIABLES - {indeterminate}},
             {(1, "q_0")},
             {(1 / n, f"q_{i}") for i in range(n)},
         )
 
     @classmethod
-    def bernoulli(cls, indeterminate: str, p: float) -> PGA:
+    def bernoulli(cls, indeterminate: str, p: Rational) -> PGA:
         """Returns the PGA encoding the bernoulli distribution with indeterminate `indeterminate` and parameter `p`.
 
         Args:
             indeterminate (str): The indeterminate.
-            p (float): The parameter (probability).
+            p (Rational): The parameter (probability).
 
         Returns:
             PGA: The PGA encoding the bernoulli distribution.
@@ -515,14 +517,14 @@ class PGAFactory:
         )
 
     @classmethod
-    def neg_binomial(cls, indeterminate: str, n: int, p: float) -> PGA:
+    def neg_binomial(cls, indeterminate: str, n: int, p: Rational) -> PGA:
         """Returns the PGA encoding the negative binomial distribution with indeterminate `indeterminate` and
         parameter `n` and `p`.
 
         Args:
             indeterminate (str): The indeterminate.
             n (int): The parameter (natural number).
-            p (float): The parameter (probability).
+            p (Rational): The parameter (probability).
 
         Returns:
             PGA: The PGA encoding the negative binomial distribution.

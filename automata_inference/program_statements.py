@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from symengine import Rational
+
 from automata_inference.guards import Guard
 from automata_inference.distributions import Distribution, DiracDistribution
 from automata_inference.automata_factory import PGAFactory, DFAFactory, PGA
@@ -115,7 +117,7 @@ class IidSamplingStatement(Statement):
 class CoinflipStatement(Statement):
     """The coinflip statement `{ lhs } [p] { rhs }`.
     """
-    def __init__(self, lhs: Statement, p: float, rhs: Statement):
+    def __init__(self, lhs: Statement, p: Rational, rhs: Statement):
         assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.lhs = lhs
         self.p = p
