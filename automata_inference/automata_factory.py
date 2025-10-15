@@ -102,7 +102,10 @@ class PGA(Automaton):
         new_transition_matrix = self.transition_matrix.copy()
         new_transition_matrix[indeterminate] = []
         new_transition_matrix[CONSTANT_KEY].extend(self.transition_matrix[indeterminate] if value == 1 else [])
-        return PGA(self.states, new_transition_matrix, self.initial, self.final)
+        if value == 1:
+            return PGA(self.states, new_transition_matrix, self.initial, self.final)    
+        else:
+            return minimize(PGA(self.states, new_transition_matrix, self.initial, self.final))
 
     def concat(self, other: PGA) -> PGA:
         """Concatenates two PGA.
@@ -222,21 +225,21 @@ class PGA(Automaton):
         Returns:
             PGA: The resulting decrement automaton.
         """
+        
         dfa_filter = DFAFactory.neg(DFAFactory.lt("X", 1))  # TODO dfa and pga should never have conflict ig
         filtered = self.product(dfa_filter)
         subs_zero = self.substitute("X", 0)
         dfa_s, dfa_t = [el for el in dfa_filter.transition_matrix[indeterminate] if el[0] != el[1]][0]
         new_transition_matrix: dict[str, list[tuple[Rational, str, str]]] = filtered.transition_matrix.copy()
-        for trans in new_transition_matrix[indeterminate]:
-            w, s, t = trans
+        for w, s, t in new_transition_matrix[indeterminate][:]:
             last_state_s, last_state_t = (
                 s.split(",")[-1].split(")")[0],
                 t.split(",")[-1].split(")")[0],
             )
             if last_state_s == dfa_s and last_state_t == dfa_t:
-                new_transition_matrix[indeterminate].remove(trans)
+                new_transition_matrix[indeterminate].remove((w, s, t))
                 new_transition_matrix[CONSTANT_KEY].append((w, s, t))
-        return filtered.weighted_union(subs_zero, 1, 1)
+        return minimize(filtered.weighted_union(subs_zero, 1, 1))
 
 
 def resolve_conflict(a1: Automaton, a2: T) -> T:
