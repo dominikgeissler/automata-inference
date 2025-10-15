@@ -551,7 +551,7 @@ class DFAFactory:
         Returns:
             DFA: The DFA encoding the guard.
         """
-        return DFA(set("p_0"), {}, {"p_0"}, set())
+        return DFA({"p_0"}, reflexive_closure({}, VARIABLES, {"p_0"}), {"p_0"}, set())
 
     @classmethod
     def lt(cls, indeterminate: str, val: int) -> DFA:
@@ -587,12 +587,12 @@ class DFAFactory:
             DFA: The DFA encoding the guard.
         """
         assert modulus > residue, "Modulus has to be greater than residue."
-        states = {f"q_{i}" for i in range(modulus)}
-        initial = {"q_0"}
-        final = {f"q_{residue}"}
+        states = {f"p_{i}" for i in range(modulus)}
+        initial = {"p_0"}
+        final = {f"p_{residue}"}
         transition_matrix: dict[str, list[tuple[str, str]]] = {v: [] for v in VARIABLES}
-        transition_matrix[indeterminate] = [(f"q_{i}", f"q_{i + 1}") for i in range(modulus - 1)] + [
-            (f"q_{modulus - 1}", "q_0")
+        transition_matrix[indeterminate] = [(f"p_{i}", f"p_{i + 1}") for i in range(modulus - 1)] + [
+            (f"p_{modulus - 1}", "p_0")
         ]
         transition_matrix = reflexive_closure(transition_matrix, VARIABLES - {indeterminate}, states)
         return DFA(states, transition_matrix, initial, final)
@@ -673,5 +673,7 @@ def reflexive_closure(
         dict[str, tuple]: The extended transition matrix.
     """
     for v in variables:
+        if not v in transition_matrix:
+            transition_matrix[v] = []
         transition_matrix[v] += [(q, q) for q in states]
     return transition_matrix
