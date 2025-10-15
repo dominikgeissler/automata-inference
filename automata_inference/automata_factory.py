@@ -145,6 +145,7 @@ class PGA(Automaton):
         assert 0 <= p <= 1 and 0 <= q <= 1, f"p and q have to be between 0 and 1 , got {p=} and {q=}"
         other = resolve_conflict(self, other)
         new_initial = {(p * c, state) for (c, state) in self.initial} | {(q * c, state) for (c, state) in other.initial}
+        print(new_initial)
         new_transition_matrix = {}
         for k in self.transition_matrix.keys() | other.transition_matrix.keys():
             new_transition_matrix[k] = (self.transition_matrix[k] if k in self.transition_matrix else []) + (
@@ -191,9 +192,10 @@ class PGA(Automaton):
         Returns:
             PGA: The PGA A_1[Y/A_2].
         """
+        # FIXME this somehow overwrites self...
         indet_trans = self.transition_matrix[indeterminate]
-        new_states = {f"{q}_{i}" for q in other.states for i in range(len(indet_trans))}
         other = resolve_conflict(self, other)
+        new_states = {f"{q}_{i}" for q in other.states for i in range(len(indet_trans))}
 
         new_transition_matrix = self.transition_matrix.copy()
         new_transition_matrix[indeterminate] = []
@@ -343,7 +345,12 @@ def remove_noncoaccessible_states(aut: T) -> T:
     Returns:
         Automaton: The automaton without unreachable / non-coaccessible states.
     """
-    is_pga = isinstance(aut, PGA)
+    # FIXME this breaks sometimes
+    is_pga = isinstance(aut, PGA) or any(isinstance(el, tuple) for el in aut.initial | aut.final)
+
+    # Remove zero initial / final weights
+    aut.initial = {el for el in aut.initial if el[0] != 0}
+    aut.final = {el for el in aut.final if el[0] != 0}
 
     def get_state(possible_weighted_state):
         return possible_weighted_state[1] if isinstance(possible_weighted_state, tuple) else possible_weighted_state

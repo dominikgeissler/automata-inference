@@ -7,12 +7,14 @@ CONSTANT_KEY = "1"
 
 class TestOneSubs:
     """Tests substitution by 1."""
-    def test_zero_pga(self):
-        pga = PGAFactory.zero()
+    def test_no_change(self):
+        """Nothing changes."""
+        pga = PGAFactory.geometric("Y", Rational(1,2))
         pga_subs = pga.substitute("X", 1)
         assert pga == pga_subs  # Nothing should change
 
     def test_dirac_pga(self):
+        """One transition between two states changes."""
         pga = PGAFactory.dirac("X", 1)
         actual = pga.substitute("X", 1)
         expected = PGA(
@@ -33,6 +35,7 @@ class TestOneSubs:
         )
 
     def test_geometric_pga(self):
+        """One self-loop changes"""
         pga = PGAFactory.geometric("X", Rational(1, 2))
         actual = pga.substitute("X", 1)
         expected = PGA(
@@ -55,12 +58,14 @@ class TestOneSubs:
 
 class TestZeroSubs:
     """Tests substitution by 0."""
-    def test_zero_pga(self):
-        pga = PGAFactory.zero()
+    def test_no_change(self):
+        """Nothing changes"""
+        pga = PGAFactory.geometric("Y", Rational(1,2))
         pga_subs = pga.substitute("X", 0)
         assert pga == pga_subs  # Nothing should change
 
     def test_dirac_pga(self):
+        """One transition between two states changes."""
         pga = PGAFactory.dirac("X", 1)
         actual = pga.substitute("X", 0)
         expected = PGA({"q_0"}, {"X": [], "Y": [], "Z": [], "1": []}, {(Rational(1, 1), "q_0")}, set())
@@ -76,6 +81,7 @@ class TestZeroSubs:
         )
 
     def test_geometric_pga(self):
+        """One self-loop changes."""
         pga = PGAFactory.geometric("X", Rational(1, 2))
         actual = pga.substitute("X", 0)
         expected = PGA(

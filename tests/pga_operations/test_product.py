@@ -4,7 +4,8 @@ from tests.utils import compare_dicts_with_unordered_lists
 
 
 def test_product_true():
-    DFA_true = DFAFactory.neg(DFAFactory.false())
+    """Filters nothing"""
+    dfa = DFAFactory.neg(DFAFactory.false())
     aut = PGA(
         {"q_0", "q_1", "q_2", "q_3"},
         {
@@ -25,7 +26,7 @@ def test_product_true():
         {(Rational(1, 1), "(q_0,p_0)")},
         {(Rational(1, 1), "(q_3,p_0)")},
     )  # Nothing is filtered
-    actual = aut.product(DFA_true)
+    actual = aut.product(dfa)
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
@@ -37,7 +38,8 @@ def test_product_true():
 
 
 def test_product_false():
-    DFA_false = DFAFactory.false()
+    """Filters everything."""
+    dfa = DFAFactory.false()
     aut = PGA(
         {"q_0", "q_1", "q_2", "q_3"},
         {
@@ -49,7 +51,7 @@ def test_product_false():
         {(Rational(1, 1), "q_3")},
     )
     expected = PGAFactory.zero()  # Everything is filtered
-    actual = aut.product(DFA_false)
+    actual = aut.product(dfa)
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
@@ -61,6 +63,7 @@ def test_product_false():
 
 
 def test_product_filter():
+    """Filters something."""
     dfa = DFAFactory.mod("X", 3, 1)
     aut = PGAFactory.geometric("X", Rational(1, 2))
     expected = PGA(
