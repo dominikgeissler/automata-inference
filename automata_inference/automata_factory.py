@@ -680,7 +680,7 @@ def reflexive_closure(
         dict[str, tuple]: The extended transition matrix.
     """
     for v in variables:
-        if not v in transition_matrix:
+        if v not in transition_matrix:
             transition_matrix[v] = []
         transition_matrix[v] += [(q, q) for q in states]
     return transition_matrix
