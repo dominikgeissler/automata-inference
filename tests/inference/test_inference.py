@@ -12,10 +12,13 @@ from automata_inference.program_statements import (
 )
 from automata_inference.guards import EqGuard, GeqGuard
 from automata_inference.distributions import NegBinomialDistribution
+
+from tests.utils import compare_dicts_with_unordered_lists
 # TODO this is a very bad test but convenient to see whether something breaks
 
 
 def test_ictac_example():
+    """Runs the ICTAC example and checks whether the result matches the expected one."""
     expected = PGA(
         {
             "((q_0,p_0),p_0)",
@@ -67,22 +70,20 @@ def test_ictac_example():
         rhs=SequentialCompositionStatement(
             lhs=IfStatement(
                 guard=EqGuard("Y", 0),
-                then_statement=IncrementDistributionStatement("X", NegBinomialDistribution("X", 1, Rational(1,2))),
-                else_statement=IncrementDistributionStatement("X", NegBinomialDistribution("X", 2, Rational(1,2))),
+                then_statement=IncrementDistributionStatement("X", NegBinomialDistribution("X", 1, Rational(1, 2))),
+                else_statement=IncrementDistributionStatement("X", NegBinomialDistribution("X", 2, Rational(1, 2))),
             ),
             rhs=ObserveStatement(guard=GeqGuard("X", 2)),
         ),
     )
 
     input_pga = PGAFactory.one()
-    result = program.apply_semantics(input_pga)
-    assert result.states == expected.states
-    assert result.final == expected.final
-    assert result.initial == expected.initial
-    for indeterminate, transitions in result.transition_matrix.items():
-        for trans in transitions:
-            assert trans in expected.transition_matrix[indeterminate], f"{trans} not included"
-
-    for indeterminate, transitions in expected.transition_matrix.items():
-        for trans in transitions:
-            assert trans in result.transition_matrix[indeterminate], f"{trans} not included"
+    actual = program.apply_semantics(input_pga)
+    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
+    assert expected.initial == actual.initial, (
+        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
+    )
+    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
+    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
+        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
+    )

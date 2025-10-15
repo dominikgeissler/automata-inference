@@ -1,7 +1,7 @@
 from symengine import Rational
 from automata_inference.automata_factory import PGA
 
-from utils import compare_dicts_with_unordered_lists
+from tests.utils import compare_dicts_with_unordered_lists
 
 
 def test_concat_same_var():

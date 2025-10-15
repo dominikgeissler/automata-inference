@@ -103,9 +103,8 @@ class PGA(Automaton):
         new_transition_matrix[indeterminate] = []
         new_transition_matrix[CONSTANT_KEY].extend(self.transition_matrix[indeterminate] if value == 1 else [])
         if value == 1:
-            return PGA(self.states, new_transition_matrix, self.initial, self.final)    
-        else:
-            return minimize(PGA(self.states, new_transition_matrix, self.initial, self.final))
+            return PGA(self.states, new_transition_matrix, self.initial, self.final)
+        return minimize(PGA(self.states, new_transition_matrix, self.initial, self.final))
 
     def concat(self, other: PGA) -> PGA:
         """Concatenates two PGA.
@@ -225,7 +224,7 @@ class PGA(Automaton):
         Returns:
             PGA: The resulting decrement automaton.
         """
-        
+
         dfa_filter = DFAFactory.neg(DFAFactory.lt("X", 1))  # TODO dfa and pga should never have conflict ig
         filtered = self.product(dfa_filter)
         subs_zero = self.substitute("X", 0)
@@ -265,7 +264,7 @@ def resolve_conflict(a1: Automaton, a2: T) -> T:
     rename_map = {s: s + suffix for s in a2.states}
 
     def rename_set(some_set: set[str]) -> set[str]:
-        """Renames a set by some map. 
+        """Renames a set by some map.
 
         Args:
             some_set (set[str]): The set to be renamed.
@@ -277,7 +276,7 @@ def resolve_conflict(a1: Automaton, a2: T) -> T:
 
     def rename_weighted_set(some_set: set[tuple[Rational, str]]) -> set[tuple[Rational, str]]:
         """Renames a weighted set by some map.
-        
+
         Args:
             some_set (set[str]): The set to be renamed.
 
@@ -311,13 +310,13 @@ def resolve_conflict(a1: Automaton, a2: T) -> T:
             transition_matrix=new_transition_matrix_weighted,
             initial=rename_weighted_set(a2.initial),
             final=rename_weighted_set(a2.final),
-        ) # type: ignore[return-value]
+        )  # type: ignore[return-value]
     return DFA(
-            states=rename_set(a2.states),
-            transition_matrix=new_transition_matrix_unweighted,
-            initial=rename_set(a2.initial),
-            final=rename_set(a2.final),
-        ) # type: ignore[return-value]
+        states=rename_set(a2.states),
+        transition_matrix=new_transition_matrix_unweighted,
+        initial=rename_set(a2.initial),
+        final=rename_set(a2.final),
+    )  # type: ignore[return-value]
 
 
 def minimize(aut: T) -> T:
@@ -380,7 +379,7 @@ def remove_noncoaccessible_states(aut: T) -> T:
 
     keep = reachable & coaccessible
     if not keep:
-        return PGAFactory.zero() if is_pga else DFAFactory.false()   # type: ignore[return-value]
+        return PGAFactory.zero() if is_pga else DFAFactory.false()  # type: ignore[return-value]
 
     new_transition_matrix = {}
     aut.states = keep
@@ -433,7 +432,7 @@ class PGAFactory:
         Returns:
             PGA: The PGA encoding the zero subdistribtion.
         """
-        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(Rational(1,1), "q_0")}, set())
+        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(Rational(1, 1), "q_0")}, set())
 
     @classmethod
     def one(cls) -> PGA:
@@ -442,7 +441,7 @@ class PGAFactory:
         Returns:
             PGA: The PGA encoding the one distribution,
         """
-        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(Rational(1,1), "q_0")}, {(Rational(1,1), "q_0")})
+        return PGA({"q_0"}, {v: [] for v in VARIABLES}, {(Rational(1, 1), "q_0")}, {(Rational(1, 1), "q_0")})
 
     # --- Distributions ---
     @classmethod
@@ -459,7 +458,7 @@ class PGAFactory:
         return PGA(
             {"q_0"},
             {indeterminate: [(1 - p, "q_0", "q_0")]} | {v: [] for v in VARIABLES - {indeterminate}},
-            {(Rational(1,1), "q_0")},
+            {(Rational(1, 1), "q_0")},
             {(p, "q_0")},
         )
 
@@ -478,8 +477,8 @@ class PGAFactory:
             {f"q_{i}" for i in range(n + 1)},
             {indeterminate: [(Rational(1, 1), f"q_{i}", f"q_{i + 1}") for i in range(n)]}
             | {v: [] for v in VARIABLES - {indeterminate}},
-            {(Rational(1,1), "q_0")},
-            {(Rational(1,1), f"q_{n}")},
+            {(Rational(1, 1), "q_0")},
+            {(Rational(1, 1), f"q_{n}")},
         )
 
     @classmethod
@@ -497,7 +496,7 @@ class PGAFactory:
             {f"q_{i}" for i in range(n)},
             {indeterminate: [(Rational(1, 1), f"q_{i}", f"q_{i + 1}") for i in range(n - 1)]}
             | {v: [] for v in VARIABLES - {indeterminate}},
-            {(Rational(1,1), "q_0")},
+            {(Rational(1, 1), "q_0")},
             {(Rational(1, n), f"q_{i}") for i in range(n)},
         )
 
@@ -515,8 +514,8 @@ class PGAFactory:
         return PGA(
             {"q_0", "q_1"},
             {indeterminate: [(p, "q_0", "q_1")]} | {v: [] for v in VARIABLES - {indeterminate}},
-            {(Rational(1,1), "q_0")},
-            {(1 - p, "q_0"), (Rational(1,1), "q_1")},
+            {(Rational(1, 1), "q_0")},
+            {(1 - p, "q_0"), (Rational(1, 1), "q_1")},
         )
 
     @classmethod
@@ -552,12 +551,7 @@ class DFAFactory:
         Returns:
             DFA: The DFA encoding the guard.
         """
-        return DFA(
-            set("p_0"),
-            {},
-            {"p_0"},
-            set()
-        )
+        return DFA(set("p_0"), {}, {"p_0"}, set())
 
     @classmethod
     def lt(cls, indeterminate: str, val: int) -> DFA:

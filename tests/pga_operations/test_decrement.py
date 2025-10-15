@@ -1,6 +1,6 @@
 from symengine import Rational
 from automata_inference.automata_factory import PGA, PGAFactory
-from utils import compare_dicts_with_unordered_lists
+from tests.utils import compare_dicts_with_unordered_lists
 
 
 def test_decrement_no_change():

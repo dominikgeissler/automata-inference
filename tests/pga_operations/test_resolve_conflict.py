@@ -12,7 +12,6 @@ def test_no_conflict():
 def test_conflict():
     aut1 = PGA(set(["q0", "q1"]), {"X": [(1, "q0", "q1")], "Y": [(1, "q1", "q0")]}, {(1, "q0")}, {(1, "q1")})
     aut2 = aut1
-    assert aut1 == aut2
     aut2 = resolve_conflict(aut1, aut2)
     assert aut1 != aut2
     assert aut1.states.isdisjoint(aut2.states)
