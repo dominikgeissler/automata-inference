@@ -145,7 +145,6 @@ class PGA(Automaton):
         assert 0 <= p <= 1 and 0 <= q <= 1, f"p and q have to be between 0 and 1 , got {p=} and {q=}"
         other = resolve_conflict(self, other)
         new_initial = {(p * c, state) for (c, state) in self.initial} | {(q * c, state) for (c, state) in other.initial}
-        print(new_initial)
         new_transition_matrix = {}
         for k in self.transition_matrix.keys() | other.transition_matrix.keys():
             new_transition_matrix[k] = (self.transition_matrix[k] if k in self.transition_matrix else []) + (
