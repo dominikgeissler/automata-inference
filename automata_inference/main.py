@@ -1,5 +1,5 @@
-from symengine import Rational
 import time
+from symengine import Rational
 from automata_inference.automata_factory import PGAFactory
 from automata_inference.visualizer import visualize
 from automata_inference.program_statements import (
