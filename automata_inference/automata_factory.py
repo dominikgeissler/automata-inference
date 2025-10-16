@@ -166,7 +166,6 @@ class PGA(Automaton):
         Returns:
             PGA: The filtered PGA A x B_phi.
         """
-        # TODO pga and dfa should never have conflict ig
         new_states = {f"({q1},{q2})" for q1 in self.states for q2 in other.states}
         new_transition_matrix = {}
         for v in self.transition_matrix.keys():
@@ -191,7 +190,6 @@ class PGA(Automaton):
         Returns:
             PGA: The PGA A_1[Y/A_2].
         """
-        # FIXME this somehow overwrites self...
         indet_trans = self.transition_matrix[indeterminate]
         other = resolve_conflict(self, other)
         new_states = {f"{q}_{i}" for q in other.states for i in range(len(indet_trans))}
@@ -226,7 +224,7 @@ class PGA(Automaton):
             PGA: The resulting decrement automaton.
         """
 
-        dfa_filter = DFAFactory.neg(DFAFactory.lt("X", 1))  # TODO dfa and pga should never have conflict ig
+        dfa_filter = DFAFactory.neg(DFAFactory.lt("X", 1))
         filtered = self.product(dfa_filter)
         subs_zero = self.substitute("X", 0)
         dfa_s, dfa_t = [el for el in dfa_filter.transition_matrix[indeterminate] if el[0] != el[1]][0]
@@ -344,7 +342,6 @@ def remove_noncoaccessible_states(aut: T) -> T:
     Returns:
         Automaton: The automaton without unreachable / non-coaccessible states.
     """
-    # FIXME this breaks sometimes
     is_pga = isinstance(aut, PGA) or any(isinstance(el, tuple) for el in aut.initial | aut.final)
 
     # Remove zero initial / final weights

@@ -14,7 +14,7 @@ from automata_inference.guards import EqGuard, GeqGuard
 from automata_inference.distributions import NegBinomialDistribution
 
 from tests.utils import compare_dicts_with_unordered_lists
-# TODO this is a very bad test but convenient to see whether something breaks
+# this is a very bad test but convenient to see whether something breaks
 
 
 def test_ictac_example():

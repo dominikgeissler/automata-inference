@@ -121,7 +121,6 @@ def test_decrement_branching_constant():
         {(Rational(1, 1), "q_0")},
         {(Rational(1, 1), "q_1"), (Rational(1, 1), "q_2"), (Rational(1, 2), "q_0")},
     )
-    # FIXME why do we have only "X" and "1" as dictkeys here?
     expected = PGA(
         {"(q_0,p_0)", "(q_1,p_1)", "(q_2,p_1)", "q_0"},
         {
