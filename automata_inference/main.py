@@ -1,3 +1,4 @@
+import time
 from symengine import Rational
 from automata_inference.automata_factory import PGAFactory
 from automata_inference.visualizer import visualize
@@ -37,8 +38,7 @@ program = SequentialCompositionStatement(
 
 print(program)
 input_pga = PGAFactory.one()
-
+start = time.time()
 out = program.apply_semantics(input_pga)
-
+print(f"Duration: {time.time() - start}")
 visualize(out, "bla", view=True)
-print(out)

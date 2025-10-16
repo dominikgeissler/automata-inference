@@ -1,56 +1,100 @@
-from automata_inference.automata_factory import PGAFactory
+from automata_inference.automata_factory import PGAFactory, PGA
+from symengine import Rational
+from tests.utils import compare_dicts_with_unordered_lists
 
 CONSTANT_KEY = "1"
 
+
 class TestOneSubs:
-    def test_zero_pga(self):
-        pga = PGAFactory.zero()
+    """Tests substitution by 1."""
+    def test_no_change(self):
+        """Nothing changes."""
+        pga = PGAFactory.geometric("Y", Rational(1,2))
         pga_subs = pga.substitute("X", 1)
         assert pga == pga_subs  # Nothing should change
 
     def test_dirac_pga(self):
+        """One transition between two states changes."""
         pga = PGAFactory.dirac("X", 1)
-        pga_subs = pga.substitute("X", 1)
-        assert pga != pga_subs
-        assert not pga_subs.transition_matrix["X"]
-        q0, q1 = pga_subs.states
-        assert pga_subs.transition_matrix[CONSTANT_KEY] == [(1, q0, q1)] or pga_subs.transition_matrix[CONSTANT_KEY] == [(1, q1, q0)] 
-        assert len(pga_subs.transition_matrix[CONSTANT_KEY]) == 1
-        assert pga.states == pga_subs.states and pga.initial == pga_subs.initial and pga.final == pga_subs.final
-    
+        actual = pga.substitute("X", 1)
+        expected = PGA(
+            {"q_0", "q_1"},
+            {"X": [], "Y": [], "Z": [], "1": [(Rational(1, 1), "q_0", "q_1")]},
+            {(Rational(1, 1), "q_0")},
+            {(Rational(1, 1), "q_1")},
+        )
+        assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
+        assert expected.initial == actual.initial, (
+            f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
+        )
+        assert expected.final == actual.final, (
+            f"Final states do not match, expected {expected.final}, got {actual.final}"
+        )
+        assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
+            f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
+        )
+
     def test_geometric_pga(self):
-        pga = PGAFactory.geometric("X", 0.5)
-        pga_subs = pga.substitute("X", 1)
-        
-        assert pga != pga_subs
-        assert not pga_subs.transition_matrix["X"]
-        assert len(pga_subs.transition_matrix[CONSTANT_KEY]) == 1
-        q0 = pga_subs.states.pop()
-        assert pga_subs.transition_matrix[CONSTANT_KEY] == [(0.5, q0, q0)]
-        assert pga.states == pga_subs.states and pga.initial == pga_subs.initial and pga.final == pga_subs.final
-    
+        """One self-loop changes"""
+        pga = PGAFactory.geometric("X", Rational(1, 2))
+        actual = pga.substitute("X", 1)
+        expected = PGA(
+            {"q_0"},
+            {"X": [], "Y": [], "Z": [], "1": [(Rational(1, 2), "q_0", "q_0")]},
+            {(Rational(1, 1), "q_0")},
+            {(Rational(1, 2), "q_0")},
+        )
+
+        assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
+        assert expected.initial == actual.initial, (
+            f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
+        )
+        assert expected.final == actual.final, (
+            f"Final states do not match, expected {expected.final}, got {actual.final}"
+        )
+        assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
+            f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
+        )
 
 class TestZeroSubs:
-    def test_zero_pga(self):
-        pga = PGAFactory.zero()
+    """Tests substitution by 0."""
+    def test_no_change(self):
+        """Nothing changes"""
+        pga = PGAFactory.geometric("Y", Rational(1,2))
         pga_subs = pga.substitute("X", 0)
-        assert pga == pga_subs  # Nothing should change  
+        assert pga == pga_subs  # Nothing should change
 
     def test_dirac_pga(self):
+        """One transition between two states changes."""
         pga = PGAFactory.dirac("X", 1)
-        pga_subs = pga.substitute("X", 0)
-        
-        assert pga != pga_subs
-        assert not pga_subs.transition_matrix["X"]
-        assert len(pga_subs.transition_matrix[CONSTANT_KEY]) == 0
-        assert pga.states == pga_subs.states and pga.initial == pga_subs.initial and pga.final == pga_subs.final
-    
+        actual = pga.substitute("X", 0)
+        expected = PGA({"q_0"}, {"X": [], "Y": [], "Z": [], "1": []}, {(Rational(1, 1), "q_0")}, set())
+        assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
+        assert expected.initial == actual.initial, (
+            f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
+        )
+        assert expected.final == actual.final, (
+            f"Final states do not match, expected {expected.final}, got {actual.final}"
+        )
+        assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
+            f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
+        )
+
     def test_geometric_pga(self):
-        pga = PGAFactory.geometric("X", 0.5)
-        pga_subs = pga.substitute("X", 0)
-        
-        assert pga != pga_subs
-        assert not pga_subs.transition_matrix["X"]
-        assert len(pga_subs.transition_matrix[CONSTANT_KEY]) == 0
-        assert pga.states == pga_subs.states and pga.initial == pga_subs.initial and pga.final == pga_subs.final
-    
+        """One self-loop changes."""
+        pga = PGAFactory.geometric("X", Rational(1, 2))
+        actual = pga.substitute("X", 0)
+        expected = PGA(
+            {"q_0"}, {"X": [], "1": [], "Y": [], "Z": []}, {(Rational(1, 1), "q_0")}, {(Rational(1, 2), "q_0")}
+        )
+
+        assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
+        assert expected.initial == actual.initial, (
+            f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
+        )
+        assert expected.final == actual.final, (
+            f"Final states do not match, expected {expected.final}, got {actual.final}"
+        )
+        assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
+            f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
+        )
