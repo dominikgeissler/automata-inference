@@ -38,16 +38,24 @@ def visualize(aut: Automaton, out_path="aut", view=True):
         for state in aut.final:
             dot.node(state, shape="doublecircle")
 
+    self_loops: dict[str, list[str]] = {q: [] for q in aut.states}
     for indeterminate, transitions in aut.transition_matrix.items():
         for trans in transitions:
             if is_pga:
+                print(dot)
                 weight, s, t = trans
                 label = f"{weight}{indeterminate}" if indeterminate != CONSTANT_KEY else str(weight)
-
             else:
                 s, t = trans
                 label = indeterminate if indeterminate != CONSTANT_KEY else ""
-
-            dot.edge(s, t, label=label)
-
+            
+            if s == t:
+                if not label:
+                    # No epsilon self-loops
+                    continue
+                self_loops[s].append(label)
+            else:
+                dot.edge(s, t, label=label)
+    for state, labels in self_loops.items():
+        dot.edge(state, state, ",".join(labels))
     dot.render(out_path, format="pdf", view=view, cleanup=True)
