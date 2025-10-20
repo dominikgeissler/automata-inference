@@ -42,7 +42,6 @@ def visualize(aut: Automaton, out_path="aut", view=True):
     for indeterminate, transitions in aut.transition_matrix.items():
         for trans in transitions:
             if is_pga:
-                print(dot)
                 weight, s, t = trans
                 label = f"{weight}{indeterminate}" if indeterminate != CONSTANT_KEY else str(weight)
             else:
