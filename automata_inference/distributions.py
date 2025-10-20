@@ -4,12 +4,14 @@ from symengine import Rational
 
 from automata_inference.automata_factory import PGAFactory, PGA
 
+from automata_inference.program_context import ProgramContext
+
 
 class Distribution(ABC):
     """Models the abstract distribution."""
 
     @abstractmethod
-    def to_pga(self) -> PGA:
+    def to_pga(self, context: ProgramContext) -> PGA:
         """Transforms a distribution to the corresponding PGA.
 
         Returns:
@@ -27,8 +29,8 @@ class BernoulliDistribution(Distribution):
         self.indeterminate = indeterminate
         self.p = p
 
-    def to_pga(self) -> PGA:
-        return PGAFactory.bernoulli(self.indeterminate, self.p)
+    def to_pga(self, context) -> PGA:
+        return PGAFactory.bernoulli(self.indeterminate, self.p, context.indeterminates)
 
     def __str__(self):
         return f"Binom({self.p})"
@@ -44,8 +46,8 @@ class NegBinomialDistribution(Distribution):
         self.n = n
         self.p = p
 
-    def to_pga(self) -> PGA:
-        return PGAFactory.neg_binomial(self.indeterminate, self.n, self.p)
+    def to_pga(self, context) -> PGA:
+        return PGAFactory.neg_binomial(self.indeterminate, self.n, self.p, context.indeterminates)
 
     def __str__(self):
         return f"NegBinom({self.n}, {self.p})"
@@ -59,8 +61,8 @@ class GeometricDistribution(Distribution):
         self.indeterminate = indeterminate
         self.p = p
 
-    def to_pga(self) -> PGA:
-        return PGAFactory.geometric(self.indeterminate, self.p)
+    def to_pga(self, context) -> PGA:
+        return PGAFactory.geometric(self.indeterminate, self.p, context.indeterminates)
 
     def __str__(self):
         return f"Geom({self.p})"
@@ -74,8 +76,8 @@ class UniformDistribution(Distribution):
         self.indeterminate = indeterminate
         self.n = n
 
-    def to_pga(self) -> PGA:
-        return PGAFactory.uniform(self.indeterminate, self.n)
+    def to_pga(self, context) -> PGA:
+        return PGAFactory.uniform(self.indeterminate, self.n, context.indeterminates)
 
     def __str__(self):
         return f"Unif({self.n})"
@@ -89,8 +91,8 @@ class DiracDistribution(Distribution):
         self.indeterminate = indeterminate
         self.n = n
 
-    def to_pga(self) -> PGA:
-        return PGAFactory.dirac(self.indeterminate, self.n)
+    def to_pga(self, context) -> PGA:
+        return PGAFactory.dirac(self.indeterminate, self.n, context.indeterminates)
 
     def __str__(self):
         return f"Dirac({self.n})"
