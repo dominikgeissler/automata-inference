@@ -57,5 +57,6 @@ def visualize(aut: Automaton, out_path="aut", view=True):
             else:
                 dot.edge(s, t, label=label)
     for state, labels in self_loops.items():
-        dot.edge(state, state, ",".join(labels))
+        if labels:
+            dot.edge(state, state, ",".join(labels))
     dot.render(out_path, format="pdf", view=view, cleanup=True)
