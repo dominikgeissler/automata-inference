@@ -15,7 +15,7 @@ def visualize(aut: Automaton, out_path="aut", view=True):
     """
     dot = Digraph(comment="Automaton visualization")
 
-    is_pga = isinstance(aut, PGA) # or any(isinstance(el, tuple) for el in aut.initial | aut.final)
+    is_pga = isinstance(aut, PGA)  # or any(isinstance(el, tuple) for el in aut.initial | aut.final)
 
     if not is_pga:
         for state in aut.states:
@@ -48,7 +48,7 @@ def visualize(aut: Automaton, out_path="aut", view=True):
             else:
                 s, t = trans
                 label = indeterminate if indeterminate != CONSTANT_KEY else ""
-            
+
             if s == t:
                 if not label:
                     # No epsilon self-loops
