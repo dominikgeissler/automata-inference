@@ -15,8 +15,7 @@ def visualize(aut: Automaton, out_path="aut", view=True):
     """
     dot = Digraph(comment="Automaton visualization")
 
-    # FIXME somehow this was broken why?
-    is_pga = isinstance(aut, PGA) or any(isinstance(el, tuple) for el in aut.initial | aut.final)
+    is_pga = isinstance(aut, PGA) # or any(isinstance(el, tuple) for el in aut.initial | aut.final)
 
     if not is_pga:
         for state in aut.states:

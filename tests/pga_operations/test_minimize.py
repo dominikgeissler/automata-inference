@@ -5,9 +5,10 @@ from tests.utils import compare_dicts_with_unordered_lists
 
 def test_remove_non_coaccessible_states_no_change():
     """If no state is unreachable, nothing should change"""
-    aut = PGAFactory.geometric("X", Rational(1, 2))
+    indeterminates = {"X", "1"}
+    aut = PGAFactory.geometric("X", Rational(1, 2), indeterminates)
     expected = aut
-    actual = remove_noncoaccessible_states(aut)
+    actual = remove_noncoaccessible_states(aut, indeterminates)
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
@@ -27,7 +28,7 @@ def test_remove_non_coaccessible_states_changes():
         {(1, "q_2")},
     )
     expected = PGA({"q_0", "q_2"}, {"1": [(1, "q_0", "q_2")]}, {(1, "q_0")}, {(1, "q_2")})
-    actual = remove_noncoaccessible_states(aut)
+    actual = remove_noncoaccessible_states(aut, {"1"})
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
@@ -44,7 +45,7 @@ def test_remove_non_coaccessible_states_remove_initial_states():
         {"q_0", "q_1", "q_2"}, {"1": [(1, "q_0", "q_2"), (1, "q_1", "q_2")]}, {(0, "q_0"), (1, "q_1")}, {(1, "q_2")}
     )
     expected = PGA({"q_1", "q_2"}, {"1": [(1, "q_1", "q_2")]}, {(1, "q_1")}, {(1, "q_2")})
-    actual = remove_noncoaccessible_states(aut)
+    actual = remove_noncoaccessible_states(aut, {"1"})
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
@@ -61,7 +62,7 @@ def test_remove_non_coaccessible_states_remove_final_states():
         {"q_0", "q_1", "q_2"}, {"1": [(1, "q_0", "q_1"), (1, "q_0", "q_2")]}, {(1, "q_0")}, {(1, "q_1"), (0, "q_2")}
     )
     expected = PGA({"q_0", "q_1"}, {"1": [(1, "q_0", "q_1")]}, {(1, "q_0")}, {(1, "q_1")})
-    actual = remove_noncoaccessible_states(aut)
+    actual = remove_noncoaccessible_states(aut, {"1"})
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
@@ -80,8 +81,8 @@ def test_remove_everything():
         {},
         {}
     )
-    expected = PGAFactory.zero()
-    actual = remove_noncoaccessible_states(aut)
+    expected = PGAFactory.zero({"1"})
+    actual = remove_noncoaccessible_states(aut, {"1"})
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"

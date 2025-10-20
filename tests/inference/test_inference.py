@@ -9,6 +9,7 @@ from automata_inference.program_statements import (
     IfStatement,
     IncrementDistributionStatement,
     ObserveStatement,
+    Program
 )
 from automata_inference.guards import EqGuard, GeqGuard
 from automata_inference.distributions import NegBinomialDistribution
@@ -47,7 +48,7 @@ def test_ictac_example():
                 (Rational(1, 2), "(q_0_1_1,p_1)", "(q_0_1_1,p_2)"),
                 (Rational(1, 2), "(q_0_1_1,p_2)", "(q_0_1_1,p_2)"),
             ],
-            "Y": [(1, "((q_0_1_1,p_0)_1,p_0)", "((q_1_1_1,p_1)_1,p_0)")],
+            "R": [(1, "((q_0_1_1,p_0)_1,p_0)", "((q_1_1_1,p_1)_1,p_0)")],
             "1": [
                 (1, "((q_0,p_0),p_0)", "(q_0,p_0)"),
                 (1, "((q_0_1,p_0)_1,p_0)", "((q_0_1_1,p_0)_1,p_0)"),
@@ -56,28 +57,26 @@ def test_ictac_example():
                 (Rational(1, 2), "(q_0_1,p_2)", "(q_0_1_1,p_2)"),
                 (1, "((q_1_1_1,p_1)_1,p_0)", "(q_0_1,p_0)"),
             ],
-            "Z": [],
         },
         {(Rational(1, 10), "((q_0_1,p_0)_1,p_0)"), (Rational(9, 10), "((q_0,p_0),p_0)")},
         {(Rational(1, 2), "(q_0,p_2)"), (Rational(1, 2), "(q_0_1_1,p_2)")},
     )
-    program = SequentialCompositionStatement(
+    program = Program(SequentialCompositionStatement(
         lhs=CoinflipStatement(
-            lhs=SetToZeroStatement("Y"),
+            lhs=SetToZeroStatement("R"),
             p=Rational(9, 10),
-            rhs=SequentialCompositionStatement(lhs=SetToZeroStatement("Y"), rhs=IncrementConstantStatement("Y", 1)),
+            rhs=SequentialCompositionStatement(lhs=SetToZeroStatement("R"), rhs=IncrementConstantStatement("R", 1)),
         ),
         rhs=SequentialCompositionStatement(
             lhs=IfStatement(
-                guard=EqGuard("Y", 0),
+                guard=EqGuard("R", 0),
                 then_statement=IncrementDistributionStatement("X", NegBinomialDistribution("X", 1, Rational(1, 2))),
                 else_statement=IncrementDistributionStatement("X", NegBinomialDistribution("X", 2, Rational(1, 2))),
             ),
             rhs=ObserveStatement(guard=GeqGuard("X", 2)),
         ),
-    )
-
-    input_pga = PGAFactory.one()
+    ))
+    input_pga = PGAFactory.one(program.variables | {"1"})
     actual = program.apply_semantics(input_pga)
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (

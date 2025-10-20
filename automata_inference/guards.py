@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 from automata_inference.automata_factory import DFAFactory, DFA
 
+from automata_inference.program_context import ProgramContext
+
 class Guard(ABC):
     """Models Boolean guards.
     """
     @abstractmethod
-    def to_dfa(self) -> DFA:
+    def to_dfa(self, context: ProgramContext) -> DFA:
         """
         Converts the given guard to the DFA representation.
         """
@@ -26,8 +28,8 @@ class LtGuard(Guard):
         self.indeterminate = indeterminate
         self.n = n
 
-    def to_dfa(self) -> DFA:
-        return DFAFactory.lt(self.indeterminate, self.n)
+    def to_dfa(self, context) -> DFA:
+        return DFAFactory.lt(self.indeterminate, self.n, context.indeterminates)
 
     def __str__(self):
         return f"{self.indeterminate} < {self.n}"
@@ -52,8 +54,8 @@ class ModGuard(Guard):
         self.modulus = modulus
         self.residue = residue
 
-    def to_dfa(self):
-        return DFAFactory.mod(self.indeterminate, self.modulus, self.residue)
+    def to_dfa(self, context):
+        return DFAFactory.mod(self.indeterminate, self.modulus, self.residue, context.indeterminates)
 
     def __str__(self):
         return f"{self.indeterminate} mod {self.modulus} = {self.residue}"
@@ -72,8 +74,8 @@ class NegGuard(Guard):
         """
         self.guard = guard
 
-    def to_dfa(self):
-        return DFAFactory.neg(self.guard.to_dfa())
+    def to_dfa(self, context):
+        return DFAFactory.neg(self.guard.to_dfa(context.indeterminates))
 
     def __str__(self):
         return f"¬({self.guard})"
@@ -94,8 +96,8 @@ class LandGuard(Guard):
         self.guard1 = guard1
         self.guard2 = guard2
 
-    def to_dfa(self):
-        return DFAFactory.land(self.guard1.to_dfa(), self.guard2.to_dfa())
+    def to_dfa(self, context):
+        return DFAFactory.land(self.guard1.to_dfa(context), self.guard2.to_dfa(context), context.indeterminates)
 
     def __str__(self):
         return f"({self.guard1}) && ({self.guard2})"
@@ -110,8 +112,8 @@ class EqGuard(Guard):
         self.indeterminate = indeterminate
         self.n = n
 
-    def to_dfa(self):
-        return DFAFactory.eq(self.indeterminate, self.n)
+    def to_dfa(self, context):
+        return DFAFactory.eq(self.indeterminate, self.n, context.indeterminates)
 
     def __str__(self):
         return f"{self.indeterminate} = {self.n}"
@@ -123,8 +125,8 @@ class GeqGuard(Guard):
         self.indeterminate = indeterminate
         self.n = n
 
-    def to_dfa(self):
-        return DFAFactory.neg(DFAFactory.lt(self.indeterminate, self.n))
+    def to_dfa(self, context):
+        return DFAFactory.neg(DFAFactory.lt(self.indeterminate, self.n, context.indeterminates))
 
     def __str__(self):
         return f"{self.indeterminate} >= {self.n}"
@@ -136,8 +138,8 @@ class LeqGuard(Guard):
         self.indeterminate = indeterminate
         self.n = n
 
-    def to_dfa(self):
-        return DFAFactory.lt(self.indeterminate, self.n + 1)
+    def to_dfa(self, context):
+        return DFAFactory.lt(self.indeterminate, self.n + 1, context.indeterminates)
 
     def __str__(self):
         return f"{self.indeterminate} <= {self.n}"
@@ -149,8 +151,8 @@ class GtGuard(Guard):
         self.indeterminate = indeterminate
         self.n = n
 
-    def to_dfa(self):
-        return DFAFactory.neg(DFAFactory.lt(self.indeterminate, self.n + 1))
+    def to_dfa(self, context):
+        return DFAFactory.neg(DFAFactory.lt(self.indeterminate, self.n + 1, context.indeterminates))
 
     def __str__(self):
         return f"{self.indeterminate} > {self.n}"

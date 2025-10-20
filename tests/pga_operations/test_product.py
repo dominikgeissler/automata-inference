@@ -1,11 +1,13 @@
 from symengine import Rational
 from automata_inference.automata_factory import PGA, DFAFactory, PGAFactory
+from automata_inference.program_context import ProgramContext
 from tests.utils import compare_dicts_with_unordered_lists
 
 
 def test_product_true():
     """Filters nothing"""
-    dfa = DFAFactory.neg(DFAFactory.false())
+    context = ProgramContext({"X", "Y", "1"})
+    dfa = DFAFactory.neg(DFAFactory.false(context.indeterminates))
     aut = PGA(
         {"q_0", "q_1", "q_2", "q_3"},
         {
@@ -26,7 +28,7 @@ def test_product_true():
         {(Rational(1, 1), "(q_0,p_0)")},
         {(Rational(1, 1), "(q_3,p_0)")},
     )  # Nothing is filtered
-    actual = aut.product(dfa)
+    actual = aut.product(dfa, context)
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
@@ -39,7 +41,8 @@ def test_product_true():
 
 def test_product_false():
     """Filters everything."""
-    dfa = DFAFactory.false()
+    context = ProgramContext({"X", "Y", "1"})
+    dfa = DFAFactory.false(context.indeterminates)
     aut = PGA(
         {"q_0", "q_1", "q_2", "q_3"},
         {
@@ -50,8 +53,8 @@ def test_product_false():
         {(Rational(1, 1), "q_0")},
         {(Rational(1, 1), "q_3")},
     )
-    expected = PGAFactory.zero()  # Everything is filtered
-    actual = aut.product(dfa)
+    expected = PGAFactory.zero(context.indeterminates)  # Everything is filtered
+    actual = aut.product(dfa, context)
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
@@ -64,8 +67,9 @@ def test_product_false():
 
 def test_product_filter():
     """Filters something."""
-    dfa = DFAFactory.mod("X", 3, 1)
-    aut = PGAFactory.geometric("X", Rational(1, 2))
+    context = ProgramContext({"X", "1"})
+    dfa = DFAFactory.mod("X", 3, 1, context.indeterminates)
+    aut = PGAFactory.geometric("X", Rational(1, 2), context.indeterminates)
     expected = PGA(
         {"(q_0,p_0)", "(q_0,p_1)", "(q_0,p_2)"},
         {
@@ -74,14 +78,12 @@ def test_product_filter():
                 (Rational(1, 2), "(q_0,p_1)", "(q_0,p_2)"),
                 (Rational(1, 2), "(q_0,p_2)", "(q_0,p_0)"),
             ],
-            "Y": [],
-            "Z": [],
             "1": [],
         },
         {(Rational(1, 1), "(q_0,p_0)")},
         {(Rational(1, 2), "(q_0,p_1)")},
     )
-    actual = aut.product(dfa)
+    actual = aut.product(dfa, context)
     assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
     assert expected.initial == actual.initial, (
         f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
