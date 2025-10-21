@@ -43,7 +43,8 @@ def visualize(aut: Automaton, out_path="aut", view=True):
         for trans in transitions:
             if is_pga:
                 weight, s, t = trans
-                label = f"{weight}{indeterminate}" if indeterminate != CONSTANT_KEY else str(weight)
+                weight = str(weight) if weight != 1 or indeterminate == CONSTANT_KEY else ""
+                label = f"{weight}{indeterminate}" if indeterminate != CONSTANT_KEY else weight
             else:
                 s, t = trans
                 label = indeterminate if indeterminate != CONSTANT_KEY else ""
