@@ -8,10 +8,15 @@ class Guard(ABC):
     """
     @abstractmethod
     def to_dfa(self, context: ProgramContext) -> DFA:
-        """
-        Converts the given guard to the DFA representation.
-        """
+        """Converts the given guard to the DFA representation.
 
+
+        Args:
+            context (ProgramContext): The program context.
+
+        Returns:
+            DFA: The DFA representing the guard.
+        """
 
 class LtGuard(Guard):
     """
@@ -109,6 +114,12 @@ class LandGuard(Guard):
 class EqGuard(Guard):
     """Represents the equality guard `indeterminate = n`"""
     def __init__(self, indeterminate: str, n: int):
+        """Creates a new EqGuard `indeterminate = n`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            n (int): The value the indeterminates count should be equal to.
+        """
         self.indeterminate = indeterminate
         self.n = n
 
@@ -122,6 +133,12 @@ class EqGuard(Guard):
 class GeqGuard(Guard):
     """Represents the geq-guard `indeterminate >= n`"""
     def __init__(self, indeterminate: str, n: int):
+        """Creates a new GeqGuard `indeterminate >= n`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            n (int): The value the count of the indeterminate should be greater or equal to.
+        """
         self.indeterminate = indeterminate
         self.n = n
 
@@ -131,10 +148,16 @@ class GeqGuard(Guard):
     def __str__(self):
         return f"{self.indeterminate} >= {self.n}"
 
-
+# todo this could be removed by parser?
 class LeqGuard(Guard):
     """Represents the leq-guard `indeterminate <= n`"""
     def __init__(self, indeterminate: str, n: int):
+        """Creates a new LeqGuard `indeterminate <= n`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            n (int): The value the count of the indeterminate should be less or equal to.
+        """
         self.indeterminate = indeterminate
         self.n = n
 
@@ -144,10 +167,16 @@ class LeqGuard(Guard):
     def __str__(self):
         return f"{self.indeterminate} <= {self.n}"
 
-
+# todo this could be removed by parser?
 class GtGuard(Guard):
     """Represents the greater-than guard `indeterminate > n`"""
     def __init__(self, indeterminate: str, n: int):
+        """Creates a new GtGuard `indeterminate > n`.
+
+        Args:
+            indeterminate (str): The indeterminate.
+            n (int): The value the count of the indeterminate should be greater than.
+        """
         self.indeterminate = indeterminate
         self.n = n
 

@@ -37,6 +37,7 @@ class Statement(ABC):
 
         Args:
             pga (PGA): The input PGA.
+            context (ProgramContext): The program context.
 
         Returns:
             PGA: The result of the semantics.
@@ -60,7 +61,12 @@ class SkipStatement(Statement):
 class SetToZeroStatement(Statement):
     """The set to zero statement `indeterminate := 0`."""
 
-    def __init__(self, indeterminate):
+    def __init__(self, indeterminate: str):
+        """Creates a new SetToZeroStatement.
+
+        Args:
+            indeterminate (str): The indeterminate whose count should be set to zero.
+        """
         self.indeterminate = indeterminate
 
     def apply_semantics(self, pga, context) -> PGA:
@@ -74,7 +80,13 @@ class SetToZeroStatement(Statement):
 class IncrementConstantStatement(Statement):
     """The increment constant statement `indeterminate += n`."""
 
-    def __init__(self, indeterminate, n: int):
+    def __init__(self, indeterminate: str, n: int):
+        """Creates a new IncrementConstantStatement.
+
+        Args:
+            indeterminate (str): The indeterminate whose count should be incremented.
+            n (int): The number the count should be incremented by.
+        """
         self.indeterminate = indeterminate
         self.n = n
 
@@ -92,7 +104,13 @@ class IncrementConstantStatement(Statement):
 class IncrementDistributionStatement(Statement):
     """The increment distribution statement `indeterminate += distribution`."""
 
-    def __init__(self, indeterminate, distribution: Distribution):
+    def __init__(self, indeterminate: str, distribution: Distribution):
+        """Creates a new IncrementDistributionStatement.
+
+        Args:
+            indeterminate (str): The indeterminate whose count should be incremented.
+            distribution (Distribution): The distribution the count should be incremented by.
+        """
         self.indeterminate = indeterminate
         self.distribution = distribution
 
@@ -107,7 +125,13 @@ class IncrementDistributionStatement(Statement):
 class IncrementVariableStatement(Statement):
     """The increment variable statement `indeterminate_lhs += indeterminate_rhs`."""
 
-    def __init__(self, indeterminate_lhs, indeterminate_rhs):
+    def __init__(self, indeterminate_lhs: str, indeterminate_rhs: str):
+        """Creates a new IncrementVariableStatement.
+
+        Args:
+            indeterminate_lhs (str): The indeterminate whose count should be incremented.
+            indeterminate_rhs (str): The indetermiante whose count should be added to the first one.
+        """
         self.indeterminate_lhs = indeterminate_lhs
         self.indeterminate_rhs = indeterminate_rhs
 
@@ -127,7 +151,14 @@ class IncrementVariableStatement(Statement):
 class IidSamplingStatement(Statement):
     """The iid statement `indeterminate_lhs += iid(distribution, indeterminate_rhs)`."""
 
-    def __init__(self, indeterminate_lhs, distribution: Distribution, indeterminate_rhs):
+    def __init__(self, indeterminate_lhs: str, distribution: Distribution, indeterminate_rhs: str):
+        """Creates a new IidSamplingStatement.
+
+        Args:
+            indeterminate_lhs (str): The indetermiante whose count should be incremented.
+            distribution (Distribution): The distribution from which is sampled.
+            indeterminate_rhs (str): The variable for which count the sampling occurs.
+        """
         self.indeterminate_lhs = indeterminate_lhs
         self.distribution = distribution
         self.indeterminate_rhs = indeterminate_rhs
@@ -149,6 +180,13 @@ class CoinflipStatement(Statement):
     """The coinflip statement `{ lhs } [p] { rhs }`."""
 
     def __init__(self, lhs: Statement, p: Rational, rhs: Statement):
+        """Create a new coinflip statement.
+
+        Args:
+            lhs (Statement): The program on the left side.
+            p (Rational): The probability of chosing the left side.
+            rhs (Statement): The program on the right side.
+        """
         assert 0 <= p <= 1, f"p has to be between 0 and 1, got {p=}"
         self.lhs = lhs
         self.p = p
@@ -168,6 +206,13 @@ class IfStatement(Statement):
     """The if statement `if(guard) { then_statenent } else { else_statement }`."""
 
     def __init__(self, guard: Guard, then_statement: Statement, else_statement: Statement):
+        """Creates a new IfStatement.
+
+        Args:
+            guard (Guard): The guard.
+            then_statement (Statement): The program which is executed for the part which satisfies the guard.
+            else_statement (Statement): The program which is executed for the part which does not satisfy the guard.
+        """
         self.guard = guard
         self.then_statement = then_statement
         self.else_statement = else_statement
@@ -187,7 +232,12 @@ class IfStatement(Statement):
 class MonusStatement(Statement):
     """The monus statement `indeterminate--`."""
 
-    def __init__(self, indeterminate):
+    def __init__(self, indeterminate: str):
+        """Creates a new MonusStatement.
+
+        Args:
+            indeterminate (str): The indeterminate whose count should be decremented.
+        """
         self.indeterminate = indeterminate
 
     def apply_semantics(self, pga, context) -> PGA:
@@ -201,6 +251,11 @@ class ObserveStatement(Statement):
     """The observe statement `observe(guard)`."""
 
     def __init__(self, guard: Guard):
+        """Creates a new ObserveStatement.
+
+        Args:
+            guard (Guard): The guard which all states should satisfy.
+        """
         self.guard = guard
 
     def apply_semantics(self, pga, context) -> PGA:
@@ -215,6 +270,12 @@ class SequentialCompositionStatement(Statement):
     """The sequential composion `lhs;rhs`."""
 
     def __init__(self, lhs: Statement, rhs: Statement):
+        """Creates a new SequentialCompositionStatement.
+
+        Args:
+            lhs (Statement): The program which is executed first.
+            rhs (Statement): The program which is executed afterwards.
+        """
         self.lhs = lhs
         self.rhs = rhs
 
@@ -229,6 +290,11 @@ class SequentialCompositionStatement(Statement):
 class Program:
     """Models a ReDiP program"""
     def __init__(self, body: Statement):
+        """Creates a new program.
+
+        Args:
+            body (Statement): The program code.
+        """
         self.body = body
         self.is_observe = check_observe(self.body)
         self.variables = get_variables_from_program(self.body)

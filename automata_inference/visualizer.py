@@ -11,7 +11,7 @@ def visualize(aut: Automaton, out_path="aut", view=True):
     Args:
         aut (Automaton): The automaton to be visualized.
         out_path (str, optional): The path the visualization should be saved at. Defaults to "aut".
-        view (bool, optional): Whether the file should be opened automatically. Defaults to False.
+        view (bool, optional): Whether the file should be opened automatically. Defaults to True.
     """
     dot = Digraph(comment="Automaton visualization")
 

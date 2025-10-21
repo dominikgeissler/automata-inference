@@ -14,6 +14,9 @@ class Distribution(ABC):
     def to_pga(self, context: ProgramContext) -> PGA:
         """Transforms a distribution to the corresponding PGA.
 
+        Args:
+            context (ProgramContext): The program context.
+
         Returns:
             PGA: The PGA which encodes the distribution
         """
