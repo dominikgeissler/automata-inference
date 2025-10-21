@@ -60,6 +60,14 @@ class DFA(Automaton):
         initial: set[str],
         final: set[str],
     ):
+        """Creates a new DFA.
+
+        Args:
+            states (set[str]): The set of states.
+            transition_matrix (dict[str, list[tuple[str, str]]]): The transition matrix.
+            initial (set[str]): The set of initial states.
+            final (set[str]): The set of final states.
+        """
         self.states = states
         self.transition_matrix = transition_matrix
         self.initial = initial
@@ -76,6 +84,14 @@ class PGA(Automaton):
         initial: set[tuple[Rational, str]],
         final: set[tuple[Rational, str]],
     ):
+        """Creates a new PGA.
+
+        Args:
+            states (set[str]): The set of states.
+            transition_matrix (dict[str, list[tuple[Rational, str, str]]]): The weighted transition matrix.
+            initial (set[tuple[Rational, str]]): The set of weighted initial states.
+            final (set[tuple[Rational, str]]): The set of weighted final states.
+        """
         self.states = states
         self.transition_matrix = transition_matrix
         self.initial = initial
@@ -95,6 +111,7 @@ class PGA(Automaton):
         Args:
             indeterminate (str): The indeterminate to be substituted
             value (int): The value (0 or 1).
+            context (ProgramContext): The program context.
 
         Returns:
             PGA: The substitution PGA A[X/i].
@@ -163,6 +180,7 @@ class PGA(Automaton):
 
         Args:
             other (DFA): The DFA the PGA should by filtered by.
+            context (ProgramContext): The program context.
 
         Returns:
             PGA: The filtered PGA A x B_phi.
@@ -220,6 +238,7 @@ class PGA(Automaton):
 
         Args:
             indeterminate (str): The indeterminate whose value should be decremented.
+            context (ProgramContext): The program context.
 
         Returns:
             PGA: The resulting decrement automaton.
@@ -247,13 +266,13 @@ def resolve_conflict(a1: Automaton, a2: T) -> T:
 
     Args:
         a1 (Automaton): The first automaton.
-        a2 (Automaton): The second automaton. This one will be changed.
+        a2 (T): The second automaton. This one will be changed.
 
     Raises:
         ValueError: Invalid transition matrix.
 
     Returns:
-        Automaton: The changed a2 automaton with new state labels that are now disjoint from a1.
+        T: The changed automaton `a2` with new state labels that are now disjoint from a1.
     """
     if a1.states.isdisjoint(a2.states):
         return a2
@@ -339,6 +358,7 @@ def remove_noncoaccessible_states(aut: T, indeterminates: set[str]) -> T:
 
     Args:
         aut (Automaton): The automaton to be minimized
+        indeterminates (set[str]): The set of indeterminates (used for default automaton)
 
     Returns:
         Automaton: The automaton without unreachable / non-coaccessible states.
@@ -434,6 +454,9 @@ class PGAFactory:
     def zero(cls, indeterminates: set[str]) -> PGA:
         """Returns the PGA encoding the zero subdistribution.
 
+        Args:
+            indeterminates (set[str]): The set of indeterminates.
+        
         Returns:
             PGA: The PGA encoding the zero subdistribtion.
         """
@@ -442,6 +465,9 @@ class PGAFactory:
     @classmethod
     def one(cls, indeterminates: set[str]) -> PGA:
         """Returns the PGA encoding the one distribution.
+        
+        Args:
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             PGA: The PGA encoding the one distribution,
@@ -456,6 +482,7 @@ class PGAFactory:
         Args:
             indeterminate (str): The indeterminate.
             p (Rational): The parameter (probability).
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             PGA: The PGA encoding the geometric distribution.
@@ -474,6 +501,7 @@ class PGAFactory:
         Args:
             indeterminate (str): The indeterminate.
             n (int): The parameter (natural number).
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             PGA: The PGA encoding the dirac distribution.
@@ -493,6 +521,7 @@ class PGAFactory:
         Args:
             indeterminate (str): The indeterminate.
             n (int): The parameter (natural number).
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             PGA: The PGA encoding the uniform distribution.
@@ -512,6 +541,7 @@ class PGAFactory:
         Args:
             indeterminate (str): The indeterminate.
             p (Rational): The parameter (probability).
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             PGA: The PGA encoding the bernoulli distribution.
@@ -532,6 +562,7 @@ class PGAFactory:
             indeterminate (str): The indeterminate.
             n (int): The parameter (natural number).
             p (Rational): The parameter (probability).
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             PGA: The PGA encoding the negative binomial distribution.
@@ -553,6 +584,9 @@ class DFAFactory:
     def false(cls, indeterminates: set[str]) -> DFA:
         """The DFA encoding the guard `false`.
 
+        Args:
+            indeterminates (set[str]): The set of indeterminates.
+
         Returns:
             DFA: The DFA encoding the guard.
         """
@@ -565,6 +599,7 @@ class DFAFactory:
         Args:
             indeterminate (str): The indeterminate.
             val (int): The value its count should be less than.
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             DFA: The DFA encoding the guard.
@@ -587,6 +622,7 @@ class DFAFactory:
             indeterminate (str): The indeterminate.
             modulus (int): The modulus.
             residue (int): The residue from the operation.
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             DFA: The DFA encoding the guard.
@@ -610,6 +646,7 @@ class DFAFactory:
         Args:
             indeterminate (str): The indeterminate.
             val (int): The number the amount of indeterminates should be equal to.
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             DFA: The DFA encoding the guard.
@@ -644,6 +681,7 @@ class DFAFactory:
         Args:
             dfa1 (DFA): The first DFA._
             dfa2 (DFA): The second DFA:
+            indeterminates (set[str]): The set of indeterminates.
 
         Returns:
             DFA: The resulting intersection DFA.
