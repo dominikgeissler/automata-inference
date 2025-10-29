@@ -10,7 +10,7 @@ from automata_inference.program_statements import (
     ObserveStatement,
     Program,
 )
-from automata_inference.guards import EqGuard, GeqGuard
+from automata_inference.guards import EqGuard, NegGuard, LtGuard
 from automata_inference.distributions import NegBinomialDistribution
 
 from tests.utils import compare_dicts_with_unordered_lists
@@ -77,7 +77,7 @@ def test_ictac_example():
                     then_statement=IncrementStatement("X", NegBinomialDistribution("X", 1, Rational(1, 2))),
                     else_statement=IncrementStatement("X", NegBinomialDistribution("X", 2, Rational(1, 2))),
                 ),
-                rhs=ObserveStatement(guard=GeqGuard("X", 2)),
+                rhs=ObserveStatement(guard=NegGuard(LtGuard("X", 2))),
             ),
         ),
         True,

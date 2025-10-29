@@ -129,23 +129,3 @@ class EqGuard(Guard):
 
     def __str__(self):
         return f"{self.indeterminate} = {self.n}"
-
-# TODO remove this by parser?
-class GtGuard(Guard):
-    """Represents the greater-than guard `indeterminate > n`"""
-
-    def __init__(self, indeterminate: str, n: int):
-        """Creates a new GtGuard `indeterminate > n`.
-
-        Args:
-            indeterminate (str): The indeterminate.
-            n (int): The value the count of the indeterminate should be greater than.
-        """
-        self.indeterminate = indeterminate
-        self.n = n
-
-    def to_dfa(self, context):
-        return DFAFactory.neg(DFAFactory.lt(self.indeterminate, self.n + 1, context.indeterminates))
-
-    def __str__(self):
-        return f"{self.indeterminate} > {self.n}"
