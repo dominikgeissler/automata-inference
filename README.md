@@ -19,7 +19,3 @@ poetry install --only main
 ```bash
 python automata_inference/main.py
 ```
-
-
-
-hellu c:
