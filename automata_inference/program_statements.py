@@ -3,26 +3,9 @@ from abc import ABC, abstractmethod
 
 from symengine import Rational
 
-from automata_inference.guards import (
-    Guard,
-    LtGuard,
-    ModGuard,
-    LandGuard,
-    NegGuard,
-    EqGuard,
-    GtGuard,
-    LeqGuard,
-    GeqGuard,
-)
+from automata_inference.guards import Guard
 from automata_inference.program_context import ProgramContext
-from automata_inference.distributions import (
-    Distribution,
-    DiracDistribution,
-    BernoulliDistribution,
-    GeometricDistribution,
-    NegBinomialDistribution,
-    UniformDistribution,
-)
+from automata_inference.distributions import Distribution, DiracDistribution
 from automata_inference.automata_factory import PGAFactory, DFAFactory, PGA
 
 CONSTANT_KEY = "1"
@@ -58,122 +41,66 @@ class SkipStatement(Statement):
         return "skip"
 
 
-class SetToZeroStatement(Statement):
-    """The set to zero statement `indeterminate := 0`."""
+class AssignStatement(Statement):
+    """Models the assignment of some value to a variable."""
 
-    def __init__(self, indeterminate: str):
-        """Creates a new SetToZeroStatement.
+    def __init__(self, indeterminate: str, rhs: int | Distribution | str | tuple[Distribution, str]):
+        """Creates a new AssignStatement.
 
         Args:
-            indeterminate (str): The indeterminate whose count should be set to zero.
+            indeterminate (str): The indeterminate whose count should be set.
+            rhs (int | Distribution | str | tuple[Distribution, str]): The rhs of the assignment.
+                (int: constant, Distribution: increment by distribution, str: increment by variable, 
+                tuple[str, Distribution]: iid-statement)
         """
         self.indeterminate = indeterminate
+        self.rhs = rhs
 
-    def apply_semantics(self, pga, context) -> PGA:
-        print(f"Calculating {str(self)}...")
-        return pga.substitute(self.indeterminate, 1, context)
-
-    def __str__(self):
-        return f"{self.indeterminate} := 0"
-
-
-class IncrementConstantStatement(Statement):
-    """The increment constant statement `indeterminate += n`."""
-
-    def __init__(self, indeterminate: str, n: int):
-        """Creates a new IncrementConstantStatement.
-
-        Args:
-            indeterminate (str): The indeterminate whose count should be incremented.
-            n (int): The number the count should be incremented by.
-        """
-        self.indeterminate = indeterminate
-        self.n = n
-
-    # Special case -> Join?
-    def apply_semantics(self, pga, context) -> PGA:
-        print(f"Calculating {str(self)}...")
-        return IncrementDistributionStatement(
-            self.indeterminate, DiracDistribution(self.indeterminate, self.n)
-        ).apply_semantics(pga, context)
-
-    def __str__(self):
-        return f"{self.indeterminate} += {self.n}"
-
-
-class IncrementDistributionStatement(Statement):
-    """The increment distribution statement `indeterminate += distribution`."""
-
-    def __init__(self, indeterminate: str, distribution: Distribution):
-        """Creates a new IncrementDistributionStatement.
-
-        Args:
-            indeterminate (str): The indeterminate whose count should be incremented.
-            distribution (Distribution): The distribution the count should be incremented by.
-        """
-        self.indeterminate = indeterminate
-        self.distribution = distribution
-
-    def apply_semantics(self, pga, context) -> PGA:
-        print(f"Calculating {str(self)}...")
-        return pga.concat(self.distribution.to_pga(context))
-
-    def __str__(self):
-        return f"{self.indeterminate} += {self.distribution}"
-
-
-class IncrementVariableStatement(Statement):
-    """The increment variable statement `indeterminate_lhs += indeterminate_rhs`."""
-
-    def __init__(self, indeterminate_lhs: str, indeterminate_rhs: str):
-        """Creates a new IncrementVariableStatement.
-
-        Args:
-            indeterminate_lhs (str): The indeterminate whose count should be incremented.
-            indeterminate_rhs (str): The indetermiante whose count should be added to the first one.
-        """
-        self.indeterminate_lhs = indeterminate_lhs
-        self.indeterminate_rhs = indeterminate_rhs
-
-    # Special case -> Join?
-    def apply_semantics(self, pga, context) -> PGA:
-        print(f"Calculating {str(self)}...")
-        return IidSamplingStatement(
-            self.indeterminate_lhs,
-            DiracDistribution(self.indeterminate_lhs, 1),
-            self.indeterminate_rhs,
-        ).apply_semantics(pga, context)
-
-    def __str__(self):
-        return f"{self.indeterminate_lhs} += {self.indeterminate_rhs}"
-
-
-class IidSamplingStatement(Statement):
-    """The iid statement `indeterminate_lhs += iid(distribution, indeterminate_rhs)`."""
-
-    def __init__(self, indeterminate_lhs: str, distribution: Distribution, indeterminate_rhs: str):
-        """Creates a new IidSamplingStatement.
-
-        Args:
-            indeterminate_lhs (str): The indetermiante whose count should be incremented.
-            distribution (Distribution): The distribution from which is sampled.
-            indeterminate_rhs (str): The variable for which count the sampling occurs.
-        """
-        self.indeterminate_lhs = indeterminate_lhs
-        self.distribution = distribution
-        self.indeterminate_rhs = indeterminate_rhs
-
-    def apply_semantics(self, pga, context) -> PGA:
-        print(f"Calculating {str(self)}...")
-        return pga.transition_substitution(
-            self.indeterminate_rhs,
-            PGAFactory.dirac(self.indeterminate_rhs, 1, context.indeterminates).concat(
-                self.distribution.to_pga(context)
-            ),
+    def apply_semantics(self, pga, context):
+        return IncrementStatement(self.indeterminate, self.rhs).apply_semantics(
+            pga.substitute(self.indeterminate, 1, context), context
         )
 
     def __str__(self):
-        return f"{self.indeterminate_lhs} += iid({self.distribution}, {self.indeterminate_rhs})"
+        return f"{self.indeterminate} := {self.rhs if not isinstance(self.rhs, tuple) \
+            else f'iid({self.rhs[0]},{self.rhs[1]})'}"
+
+
+class IncrementStatement(Statement):
+    """Models the incrementation of a variable by some value."""
+
+    def __init__(self, indeterminate: str, rhs: int | Distribution | str | tuple[Distribution, str]):
+        """Creates a new AssignStatement.
+
+        Args:
+            indeterminate (str): The indeterminate whose count should be incremented.
+            rhs (int | Distribution | str | tuple[Distribution, str]): The rhs of the incrementation.
+                (int: constant, Distribution: increment by distribution, str: increment by variable, 
+                tuple[str, Distribution]: iid-statement)
+        """
+        self.indeterminate = indeterminate
+        self.rhs = rhs
+
+    def apply_semantics(self, pga, context):
+        if isinstance(self.rhs, Distribution):
+            # Increment by distribution
+            return pga.concat(self.rhs.to_pga(context))
+        if isinstance(self.rhs, int):
+            # Increment by constant
+            return pga.concat(DiracDistribution(self.indeterminate, self.rhs).to_pga(context))
+        # iid or increment variable
+        if isinstance(self.rhs, str):
+            indet_rhs = self.rhs
+            distr = DiracDistribution(self.indeterminate, 1)
+        else:
+            distr, indet_rhs = self.rhs
+        return pga.transition_substitution(
+            indet_rhs, PGAFactory.dirac(indet_rhs, 1, context.indeterminates).concat(distr.to_pga(context))
+        )
+
+    def __str__(self):
+        return f"{self.indeterminate} += {self.rhs if not isinstance(self.rhs, tuple) \
+            else f'iid({self.rhs[0]},{self.rhs[1]})'}"
 
 
 class CoinflipStatement(Statement):
@@ -289,15 +216,18 @@ class SequentialCompositionStatement(Statement):
 
 class Program:
     """Models a ReDiP program"""
-    def __init__(self, body: Statement):
+
+    def __init__(self, body: Statement, is_observe: bool, variables: set[str]):
         """Creates a new program.
 
         Args:
             body (Statement): The program code.
+            is_observe (bool): Indicating whether an observe-instruction occurs.
+            variables (set[str]): The set of variables occurring in the program.
         """
         self.body = body
-        self.is_observe = check_observe(self.body)
-        self.variables = get_variables_from_program(self.body)
+        self.is_observe = is_observe
+        self.variables = variables
 
     def apply_semantics(self, pga: PGA) -> PGA:
         """Calculates the semantics of the program given some distribution encoded as PGA.
@@ -312,100 +242,3 @@ class Program:
 
     def __str__(self):
         return str(self.body)
-
-
-# === To be replaced by parsing ===
-
-
-def check_observe(program: Statement) -> bool:
-    """Checks whether a given program contains an observe-statement.
-
-    Args:
-        program (Statement): The program that should be checked.
-
-    Returns:
-        bool: Indicates whether the program contains an observe-statement.
-    """
-    if isinstance(program, ObserveStatement):
-        return True
-    if isinstance(program, (SequentialCompositionStatement | CoinflipStatement)):
-        return check_observe(program.lhs) or check_observe(program.rhs)
-    if isinstance(program, IfStatement):
-        return check_observe(program.then_statement) or check_observe(program.else_statement)
-    return False
-
-
-def get_variables_from_program(program: Statement) -> set[str]:
-    """Collects the variables from a given program.
-
-    Args:
-        program (Statement): The program the variables should be collected from.
-
-    Returns:
-        set[str]: The set of variables contained in the program.
-    """
-    if isinstance(program, ObserveStatement):
-        return get_variables_from_guard(program.guard)
-    if isinstance(program, IfStatement):
-        return (
-            get_variables_from_guard(program.guard)
-            | get_variables_from_program(program.then_statement)
-            | get_variables_from_program(program.else_statement)
-        )
-    if isinstance(program, (SequentialCompositionStatement | CoinflipStatement)):
-        return get_variables_from_program(program.lhs) | get_variables_from_program(program.rhs)
-    if isinstance(program, IncrementVariableStatement):
-        return {program.indeterminate_lhs, program.indeterminate_rhs}
-    if isinstance(program, IidSamplingStatement):
-        return {program.indeterminate_lhs, program.indeterminate_rhs} | get_variables_from_distribution(
-            program.distribution
-        )
-    if isinstance(program, IncrementDistributionStatement):
-        return {program.indeterminate} | get_variables_from_distribution(program.distribution)
-    if isinstance(program, (SetToZeroStatement | IncrementConstantStatement | MonusStatement)):
-        return {program.indeterminate}
-    return set()
-
-
-def get_variables_from_distribution(distr: Distribution) -> set[str]:
-    """Collects the variable from a distribution.
-
-    Args:
-        distr (Distribution): The distribution the variable should be collected from.
-
-    Returns:
-        set[str]: The set of variables included in the distribution.
-    """
-    if isinstance(
-        distr,
-        (
-            BernoulliDistribution
-            | DiracDistribution
-            | GeometricDistribution
-            | NegBinomialDistribution
-            | UniformDistribution
-        ),
-    ):
-        return {distr.indeterminate}
-    return set()
-
-
-def get_variables_from_guard(guard: Guard) -> set[str]:
-    """Collects the variables from a given guard.
-
-    Args:
-        guard (Guard): The guard the variables should be extracted from.
-
-    Returns:
-        set[str]: The set of variables included in the guard. 
-    """
-    if isinstance(guard, LandGuard):
-        return get_variables_from_guard(guard.guard1) | get_variables_from_guard(guard.guard2)
-    if isinstance(guard, NegGuard):
-        return get_variables_from_guard(guard.guard)
-    if isinstance(guard, (LtGuard | ModGuard | EqGuard | GtGuard | LeqGuard | GeqGuard)):
-        return {guard.indeterminate}
-    return set()
-
-
-# ================================

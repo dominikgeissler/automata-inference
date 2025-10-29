@@ -3,9 +3,10 @@ from automata_inference.automata_factory import DFAFactory, DFA
 
 from automata_inference.program_context import ProgramContext
 
+
 class Guard(ABC):
-    """Models Boolean guards.
-    """
+    """Models Boolean guards."""
+
     @abstractmethod
     def to_dfa(self, context: ProgramContext) -> DFA:
         """Converts the given guard to the DFA representation.
@@ -17,6 +18,7 @@ class Guard(ABC):
         Returns:
             DFA: The DFA representing the guard.
         """
+
 
 class LtGuard(Guard):
     """
@@ -52,9 +54,7 @@ class ModGuard(Guard):
             modulus (int): The modulus of the comparison.
             residue (int): The residue of the operation.
         """
-        assert modulus > residue, (
-            f"Modulus has to be greater than residue, got: {modulus=}, {residue=}"
-        )
+        assert modulus > residue, f"Modulus has to be greater than residue, got: {modulus=}, {residue=}"
         self.indeterminate = indeterminate
         self.modulus = modulus
         self.residue = residue
@@ -80,7 +80,7 @@ class NegGuard(Guard):
         self.guard = guard
 
     def to_dfa(self, context):
-        return DFAFactory.neg(self.guard.to_dfa(context.indeterminates))
+        return DFAFactory.neg(self.guard.to_dfa(context))
 
     def __str__(self):
         return f"¬({self.guard})"
@@ -113,6 +113,7 @@ class LandGuard(Guard):
 
 class EqGuard(Guard):
     """Represents the equality guard `indeterminate = n`"""
+
     def __init__(self, indeterminate: str, n: int):
         """Creates a new EqGuard `indeterminate = n`.
 
@@ -128,60 +129,3 @@ class EqGuard(Guard):
 
     def __str__(self):
         return f"{self.indeterminate} = {self.n}"
-
-
-class GeqGuard(Guard):
-    """Represents the geq-guard `indeterminate >= n`"""
-    def __init__(self, indeterminate: str, n: int):
-        """Creates a new GeqGuard `indeterminate >= n`.
-
-        Args:
-            indeterminate (str): The indeterminate.
-            n (int): The value the count of the indeterminate should be greater or equal to.
-        """
-        self.indeterminate = indeterminate
-        self.n = n
-
-    def to_dfa(self, context):
-        return DFAFactory.neg(DFAFactory.lt(self.indeterminate, self.n, context.indeterminates))
-
-    def __str__(self):
-        return f"{self.indeterminate} >= {self.n}"
-
-# todo this could be removed by parser?
-class LeqGuard(Guard):
-    """Represents the leq-guard `indeterminate <= n`"""
-    def __init__(self, indeterminate: str, n: int):
-        """Creates a new LeqGuard `indeterminate <= n`.
-
-        Args:
-            indeterminate (str): The indeterminate.
-            n (int): The value the count of the indeterminate should be less or equal to.
-        """
-        self.indeterminate = indeterminate
-        self.n = n
-
-    def to_dfa(self, context):
-        return DFAFactory.lt(self.indeterminate, self.n + 1, context.indeterminates)
-
-    def __str__(self):
-        return f"{self.indeterminate} <= {self.n}"
-
-# todo this could be removed by parser?
-class GtGuard(Guard):
-    """Represents the greater-than guard `indeterminate > n`"""
-    def __init__(self, indeterminate: str, n: int):
-        """Creates a new GtGuard `indeterminate > n`.
-
-        Args:
-            indeterminate (str): The indeterminate.
-            n (int): The value the count of the indeterminate should be greater than.
-        """
-        self.indeterminate = indeterminate
-        self.n = n
-
-    def to_dfa(self, context):
-        return DFAFactory.neg(DFAFactory.lt(self.indeterminate, self.n + 1, context.indeterminates))
-
-    def __str__(self):
-        return f"{self.indeterminate} > {self.n}"

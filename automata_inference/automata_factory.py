@@ -593,7 +593,7 @@ class DFAFactory:
         return DFA({"p_0"}, reflexive_closure({}, indeterminates, {"p_0"}), {"p_0"}, set())
 
     @classmethod
-    def lt(cls, indeterminate: str, val: int, indeterminates) -> DFA:
+    def lt(cls, indeterminate: str, val: int, indeterminates: set[str]) -> DFA:
         """The DFA encoding the less-than guard `indeterminate` < `val`.
 
         Args:

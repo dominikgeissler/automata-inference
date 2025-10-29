@@ -1,0 +1,11 @@
+var R;
+var X;
+
+// We assume that all variables have the value of 0 at start
+{ R := 0 } [9/10] { R := 1 };
+if (R = 0) {
+    X += negbinom(1, 1/2);
+} else {
+    X += negbinom(2, 1/2);
+}
+observe(X >= 2);

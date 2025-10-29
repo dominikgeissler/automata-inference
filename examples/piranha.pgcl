@@ -1,0 +1,17 @@
+var P; // Indicates whether there was a piranha in the bowl (P=1) or not (P=0)
+var R; // Indicates whether the removed fish is a piranha (R=1)
+
+// Initially, there is a 50% chance the fish is a piranha
+P := bernoulli(1/2);
+
+// Now we throw another piranha in
+if (P = 1) {
+    // Both fish are piranhas, so we always take one piranha out
+    R := 1;
+} else {
+    // We either pick the piranha or the goldfish
+    R := bernoulli(1/2);
+}
+
+// We observe that we took a piranha out
+observe(R = 1);
