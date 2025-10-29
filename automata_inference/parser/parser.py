@@ -87,9 +87,17 @@ var: CNAME
 
 def parse(program_path: str) -> Program:
     program = open(program_path, "r", encoding="utf-8").read()
+    return parse_string(program)
+
+
+def parse_string(program: str) -> Program:
     parser = get_parser()
     ast = parser.parse(program)
     return _parse_tree(ast)
+
+
+def get_parser() -> Lark:
+    return Lark(GRAMMAR, start="program")
 
 
 def _parse_tree(tree: Tree) -> Program:
@@ -102,6 +110,7 @@ def _parse_tree(tree: Tree) -> Program:
     )
 
 
+# === Declarations ===
 def _parse_declarations(tree: Tree) -> list[str]:
     return [_parse_declaration(decl) for decl in tree.children]
 
@@ -110,12 +119,12 @@ def _parse_declaration(tree: Tree) -> str:
     return _parse_var(tree.children[0])
 
 
+# === Statements ===
 def _parse_statements(tree: Tree):
     return [_parse_statement(t) for t in tree.children]
 
 
 def _parse_statement(tree: Tree):
-    print(tree.data)
     if tree.data == "skip":
         return _parse_statement_skip(tree)
     if tree.data == "assignment":
@@ -157,8 +166,6 @@ def _parse_statement_monus(tree: Tree):
 
 
 def _parse_statement_probchoice(tree: Tree) -> CoinflipStatement:
-    # todo now sequential composition in branches is not supported!
-    print("heer")
     lhs = _statement_list_to_sequential_comp(_parse_statements(tree.children[0]))
     p = _parse_frac(tree.children[1])
     rhs = _statement_list_to_sequential_comp(_parse_statements(tree.children[2]))
@@ -166,7 +173,6 @@ def _parse_statement_probchoice(tree: Tree) -> CoinflipStatement:
 
 
 def _parse_statement_if(tree: Tree):
-    # todo now sequential composition in branches is not supported!
     guard = _parse_guard(tree.children[0].children[0])
     then_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[1]))
     else_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[2]))
@@ -183,6 +189,8 @@ def _parse_statement_while(tree: Tree):
 
 
 def _parse_frac(tree: Tree) -> Rational:
+    if int(str(tree.children[1])) == 0:
+        raise Exception("Division by 0")
     return Rational(tree.children[0], tree.children[1])
 
 
@@ -330,15 +338,11 @@ def _parse_guard_neg(tree: Tree) -> NegGuard:
     return NegGuard(guard)
 
 
-def get_parser() -> Lark:
-    return Lark(GRAMMAR, start="program")
-
-
 def _statement_list_to_sequential_comp(statements: list[Statement]) -> Statement:
     if len(statements) == 1:
         return statements[0]
     return reduce(
-        lambda acc, stmt: SequentialCompositionStatement(lhs=stmt, rhs=acc),
+        lambda rhs, lhs: SequentialCompositionStatement(lhs=lhs, rhs=rhs),
         reversed(statements[:-1]),
         statements[-1],
     )
