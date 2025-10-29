@@ -1,3 +1,6 @@
+# Unnamed tool for Automatic Exact Probabilistic Inference using Weighted Automata
+Based on [Weighted Automata for Exact Inference in Discrete Probabilistic Programs](https://doi.org/10.48550/arXiv.2509.15074).
+
 ## Setup
 * (Optional) Create virtual environment
 
