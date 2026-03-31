@@ -239,7 +239,11 @@ class Program:
         Returns:
             PGA: The posterior distribution.
         """
-        return self.body.apply_semantics(pga, ProgramContext(indeterminates=self.variables | {CONSTANT_KEY}))
+        unnormalized_posterior = self.body.apply_semantics(pga, ProgramContext(indeterminates=self.variables | {CONSTANT_KEY}))
+        
+        return unnormalized_posterior if not self.is_observe else unnormalized_posterior.normalize()
+        
+
 
     def __str__(self):
         return str(self.body)

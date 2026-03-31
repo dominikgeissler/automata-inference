@@ -3,7 +3,10 @@ from __future__ import annotations
 import itertools
 from abc import ABC, abstractmethod
 from typing import TypeVar
+from fractions import Fraction
 
+from scipy.optimize import linprog
+import numpy as np
 from symengine import Rational
 
 from automata_inference.program_context import ProgramContext
@@ -96,6 +99,39 @@ class PGA(Automaton):
         self.transition_matrix = transition_matrix
         self.initial = initial
         self.final = final
+        
+    def _construct_marginalized_transition_matrix(self, states: list[str]):
+        arr = [[0 for _ in range(len(states))] for _ in range(len(states))]
+        t_matrix = self.transition_matrix
+        
+        # Marginalize all variables
+        for v in t_matrix.keys() - CONSTANT_KEY:
+            t_matrix[CONSTANT_KEY].extend(t_matrix[v])
+        for (s,t) in itertools.product(states, states):
+            match = next((x for x in t_matrix[CONSTANT_KEY] if x[1:] == (s,t)), None)
+            if match is not None:
+                pos_s = states.index(s)
+                pos_t = states.index(t)
+                arr[pos_s][pos_t] = match[0]
+        return arr 
+    
+    def _construct_initial_weights_vector(self, states):
+        arr = [0 for _ in states]
+        for s in states:
+            match = next((x for x in self.initial if x[1] == s), None)
+            if match is not None:
+                arr[states.index(s)] = match[0]
+        return arr
+            
+    
+    def _construct_final_weights_vector(self, states):
+        arr = [0 for _ in states]
+        for s in states:
+            match = next((x for x in self.final if x[1] == s), None)
+            if match is not None:
+                arr[states.index(s)] = match[0]
+        return arr
+        
 
     def get_probability_mass(self) -> Rational:
         """Calculates the probability mass of the PGA.
@@ -103,7 +139,60 @@ class PGA(Automaton):
         Returns:
             Rational: The probability mass of the PGA.
         """
-        raise NotImplementedError("todo")
+        states = sorted(self.states)
+        
+        # Construct the vectors and matrix
+        I = np.array(self._construct_initial_weights_vector(states))
+        M = np.array(self._construct_marginalized_transition_matrix(states))
+        F = np.array(self._construct_final_weights_vector(states))
+        n = len(states)
+        
+        # We want to solve the linear program
+        #   min     I*B
+        #   s.t.    B = M*B + F
+        #           B >= 0
+        # where B is our decision vector.
+        # We rewrite the first constraint as
+        #
+        #           (I_d - M)*B = F
+        #           ^----------^
+        #               A_eq
+        #
+        # to fit the equality constraint of scipy.
+        
+        A_eq = np.eye(n) - M
+        
+        bounds = [(0, None)] * n
+        
+        res = linprog(
+            c=I,
+            A_eq=A_eq,
+            b_eq=F,
+            bounds=bounds,
+            method="highs"
+        )
+        
+        if res.success:
+            return res.fun
+        else:
+            print("LP failed:", res.message)
+            raise ValueError("idk")
+        
+    def normalize(self) -> PGA:
+        probability_mass = Fraction(str(self.get_probability_mass()))
+        print(probability_mass)
+        assert probability_mass != 0, "Probability mass is equal to 0, normalization undefined"
+        normalization_coeff = Rational(probability_mass.denominator, probability_mass.numerator)
+        
+        new_initial_weights = {(normalization_coeff * c, q) for (c,q) in self.initial}
+        return PGA(
+            self.states,
+            self.transition_matrix,
+            new_initial_weights,
+            self.final
+        )
+        
+
 
     def substitute(self, indeterminate: str, value: int, context: ProgramContext) -> PGA:
         """Substitutes a given indeterminate by some value in {0,1}
