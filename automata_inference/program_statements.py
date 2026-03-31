@@ -7,7 +7,6 @@ from automata_inference.guards import Guard
 from automata_inference.program_context import ProgramContext
 from automata_inference.distributions import Distribution, DiracDistribution
 from automata_inference.automata_factory import PGAFactory, DFAFactory, PGA
-from automata_inference.visualizer import visualize
 
 CONSTANT_KEY = "1"
 
@@ -51,7 +50,7 @@ class AssignStatement(Statement):
         Args:
             indeterminate (str): The indeterminate whose count should be set.
             rhs (int | Distribution | str | tuple[Distribution, str]): The rhs of the assignment.
-                (int: constant, Distribution: increment by distribution, str: increment by variable, 
+                (int: constant, Distribution: increment by distribution, str: increment by variable,
                 tuple[str, Distribution]: iid-statement)
         """
         self.indeterminate = indeterminate
@@ -63,8 +62,9 @@ class AssignStatement(Statement):
         )
 
     def __str__(self):
-        return f"{self.indeterminate} := {self.rhs if not isinstance(self.rhs, tuple) \
-            else f'iid({self.rhs[0]},{self.rhs[1]})'}"
+        return f"{self.indeterminate} := {
+            self.rhs if not isinstance(self.rhs, tuple) else f'iid({self.rhs[0]},{self.rhs[1]})'
+        }"
 
 
 class IncrementStatement(Statement):
@@ -76,7 +76,7 @@ class IncrementStatement(Statement):
         Args:
             indeterminate (str): The indeterminate whose count should be incremented.
             rhs (int | Distribution | str | tuple[Distribution, str]): The rhs of the incrementation.
-                (int: constant, Distribution: increment by distribution, str: increment by variable, 
+                (int: constant, Distribution: increment by distribution, str: increment by variable,
                 tuple[str, Distribution]: iid-statement)
         """
         self.indeterminate = indeterminate
@@ -100,8 +100,9 @@ class IncrementStatement(Statement):
         )
 
     def __str__(self):
-        return f"{self.indeterminate} += {self.rhs if not isinstance(self.rhs, tuple) \
-            else f'iid({self.rhs[0]},{self.rhs[1]})'}"
+        return f"{self.indeterminate} += {
+            self.rhs if not isinstance(self.rhs, tuple) else f'iid({self.rhs[0]},{self.rhs[1]})'
+        }"
 
 
 class CoinflipStatement(Statement):
@@ -239,11 +240,11 @@ class Program:
         Returns:
             PGA: The posterior distribution.
         """
-        unnormalized_posterior = self.body.apply_semantics(pga, ProgramContext(indeterminates=self.variables | {CONSTANT_KEY}))
-        
-        return unnormalized_posterior if not self.is_observe else unnormalized_posterior.normalize()
-        
+        unnormalized_posterior = self.body.apply_semantics(
+            pga, ProgramContext(indeterminates=self.variables | {CONSTANT_KEY})
+        )
 
+        return unnormalized_posterior if not self.is_observe else unnormalized_posterior.normalize()
 
     def __str__(self):
         return str(self.body)

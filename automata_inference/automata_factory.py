@@ -99,22 +99,22 @@ class PGA(Automaton):
         self.transition_matrix = transition_matrix
         self.initial = initial
         self.final = final
-        
+
     def _construct_marginalized_transition_matrix(self, states: list[str]):
         arr = [[0 for _ in range(len(states))] for _ in range(len(states))]
         t_matrix = self.transition_matrix
-        
+
         # Marginalize all variables
         for v in t_matrix.keys() - CONSTANT_KEY:
             t_matrix[CONSTANT_KEY].extend(t_matrix[v])
-        for (s,t) in itertools.product(states, states):
-            match = next((x for x in t_matrix[CONSTANT_KEY] if x[1:] == (s,t)), None)
+        for s, t in itertools.product(states, states):
+            match = next((x for x in t_matrix[CONSTANT_KEY] if x[1:] == (s, t)), None)
             if match is not None:
                 pos_s = states.index(s)
                 pos_t = states.index(t)
                 arr[pos_s][pos_t] = match[0]
-        return arr 
-    
+        return arr
+
     def _construct_initial_weights_vector(self, states):
         arr = [0 for _ in states]
         for s in states:
@@ -122,8 +122,7 @@ class PGA(Automaton):
             if match is not None:
                 arr[states.index(s)] = match[0]
         return arr
-            
-    
+
     def _construct_final_weights_vector(self, states):
         arr = [0 for _ in states]
         for s in states:
@@ -131,7 +130,6 @@ class PGA(Automaton):
             if match is not None:
                 arr[states.index(s)] = match[0]
         return arr
-        
 
     def get_probability_mass(self) -> Rational:
         """Calculates the probability mass of the PGA.
@@ -140,13 +138,13 @@ class PGA(Automaton):
             Rational: The probability mass of the PGA.
         """
         states = sorted(self.states)
-        
+
         # Construct the vectors and matrix
         I = np.array(self._construct_initial_weights_vector(states))
         M = np.array(self._construct_marginalized_transition_matrix(states))
         F = np.array(self._construct_final_weights_vector(states))
         n = len(states)
-        
+
         # We want to solve the linear program
         #   min     I*B
         #   s.t.    B = M*B + F
@@ -159,40 +157,32 @@ class PGA(Automaton):
         #               A_eq
         #
         # to fit the equality constraint of scipy.
-        
+
         A_eq = np.eye(n) - M
-        
+
         bounds = [(0, None)] * n
-        
-        res = linprog(
-            c=I,
-            A_eq=A_eq,
-            b_eq=F,
-            bounds=bounds,
-            method="highs"
-        )
-        
+
+        res = linprog(c=I, A_eq=A_eq, b_eq=F, bounds=bounds, method="highs")
+
         if res.success:
             return res.fun
-        else:
-            print("LP failed:", res.message)
-            raise ValueError("idk")
-        
+
+        # TODO error handling?
+        print("LP failed:", res.message)
+        raise ValueError("idk")
+
     def normalize(self) -> PGA:
+        """Normalizes the PGA by computing the probability mass and weighting the initial weights by its reciprocal.
+
+        Returns:
+            PGA: The normalized posterior distribution.
+        """
         probability_mass = Fraction(str(self.get_probability_mass()))
-        print(probability_mass)
         assert probability_mass != 0, "Probability mass is equal to 0, normalization undefined"
         normalization_coeff = Rational(probability_mass.denominator, probability_mass.numerator)
-        
-        new_initial_weights = {(normalization_coeff * c, q) for (c,q) in self.initial}
-        return PGA(
-            self.states,
-            self.transition_matrix,
-            new_initial_weights,
-            self.final
-        )
-        
 
+        new_initial_weights = {(normalization_coeff * c, q) for (c, q) in self.initial}
+        return PGA(self.states, self.transition_matrix, new_initial_weights, self.final)
 
     def substitute(self, indeterminate: str, value: int, context: ProgramContext) -> PGA:
         """Substitutes a given indeterminate by some value in {0,1}
@@ -492,8 +482,8 @@ def remove_noncoaccessible_states(aut: T, indeterminates: set[str]) -> T:
 
     keep = reachable & coaccessible
     if not keep:
-        return PGAFactory.zero(indeterminates) if is_pga \
-            else DFAFactory.false(indeterminates)  # type: ignore[return-value]
+        # pylint: disable=[C0301]
+        return PGAFactory.zero(indeterminates) if is_pga else DFAFactory.false(indeterminates)  # type: ignore[return-value]
 
     new_transition_matrix = {}
     aut.states = keep
@@ -545,7 +535,7 @@ class PGAFactory:
 
         Args:
             indeterminates (set[str]): The set of indeterminates.
-        
+
         Returns:
             PGA: The PGA encoding the zero subdistribtion.
         """
@@ -554,7 +544,7 @@ class PGAFactory:
     @classmethod
     def one(cls, indeterminates: set[str]) -> PGA:
         """Returns the PGA encoding the one distribution.
-        
+
         Args:
             indeterminates (set[str]): The set of indeterminates.
 

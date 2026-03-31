@@ -16,3 +16,6 @@ max-line-length=120
 
 [MISCELLANEOUS]
 notes=FIXME,TODO,todo
+
+[BASIC]
+good-names=A_eq,I,M,F
