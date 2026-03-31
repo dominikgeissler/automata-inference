@@ -7,6 +7,7 @@ from automata_inference.guards import Guard
 from automata_inference.program_context import ProgramContext
 from automata_inference.distributions import Distribution, DiracDistribution
 from automata_inference.automata_factory import PGAFactory, DFAFactory, PGA
+from automata_inference.visualizer import visualize
 
 CONSTANT_KEY = "1"
 

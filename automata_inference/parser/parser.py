@@ -63,6 +63,8 @@ guard:  var "<" INT             -> lt
     |   var "<=" INT            -> leq
     |   var ">=" INT            -> geq
     |   var ">" INT             -> gt
+    |   var "!=" INT            -> neq
+    |   guard "->" guard        -> impl
     |   guard "&&" guard        -> land
     |   guard "||" guard        -> lor
     |   "!" par_block           -> neg
@@ -292,6 +294,10 @@ def _parse_guard(tree: Tree, variables: set[str]):
         return _parse_guard_land(tree, variables)
     if tree.data == "lor":
         return _parse_guard_lor(tree, variables)
+    if tree.data == "neq":
+        return _parse_guard_neq(tree, variables)
+    if tree.data == "impl":
+        return _parse_guard_impl(tree, variables)
     if tree.data == "neg":
         return _parse_guard_neg(tree, variables)
     raise ValueError(f"Unknown guard, {tree.data}")
@@ -339,9 +345,20 @@ def _parse_guard_land(tree: Tree, variables: set[str]) -> LandGuard:
     guard2 = _parse_guard(tree.children[1], variables)
     return LandGuard(guard1, guard2)
 
+def _parse_guard_neq(tree: Tree, variables: set[str]) -> NegGuard:
+    indeterminate = _parse_var(tree.children[0], variables)
+    n = _parse_int(tree.children[1])
+    return NegGuard(EqGuard(indeterminate, n))
 
-def _parse_guard_lor(tree: Tree, variables: set[str]):
-    raise NotImplementedError("kb")
+def _parse_guard_lor(tree: Tree, variables: set[str]) -> NegGuard:
+    guard_1 = _parse_guard(tree.children[0], variables)
+    guard_2 = _parse_guard(tree.children[0], variables)
+    return NegGuard(LandGuard(NegGuard(guard_1), NegGuard(guard_2)))
+
+def _parse_guard_impl(tree: Tree, variables: set[str]) -> NegGuard:
+    guard_1 = _parse_guard(tree.children[0], variables)
+    guard_2 = _parse_guard(tree.children[0], variables)
+    return NegGuard(LandGuard(guard_1, NegGuard(guard_2)))
 
 
 def _parse_guard_neg(tree: Tree, variables: set[str]) -> NegGuard:
