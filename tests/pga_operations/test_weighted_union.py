@@ -1,7 +1,9 @@
-from automata_inference.automata_factory import minimize, PGAFactory, PGA
-from automata_inference.program_context import ProgramContext
 from symengine import Rational
+
+from automata_inference.automata_factory import PGA, PGAFactory, minimize
+from automata_inference.program_context import ProgramContext
 from tests.utils import compare_dicts_with_unordered_lists
+
 
 def test_weighted_union_parameter_zero():
     """Atleast one parameter is zero."""
