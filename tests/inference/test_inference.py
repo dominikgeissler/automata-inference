@@ -19,7 +19,6 @@ from tests.utils import compare_dicts_with_unordered_lists
 
 
 # TODO fix this test (account for normalization)
-@pytest.mark.skip(reason="Fix this")
 def test_ictac_example():
     """Runs the ICTAC example and checks whether the result matches the expected one."""
     expected = PGA(
@@ -64,7 +63,7 @@ def test_ictac_example():
             ],
             "R": [(1, "((q_0_1__1_,p_0)_1,p_0)", "((q_1_1__1_,p_1)_1,p_0)")],
         },
-        {(Rational(1,10), "((q_0_1_,p_0)_1,p_0)"), (Rational(9,10), "((q_0,p_0),p_0)")},
+        {(Rational(4,11), "((q_0_1_,p_0)_1,p_0)"), (Rational(36,11), "((q_0,p_0),p_0)")},
         {(Rational(1,2), "(q_0,p_2)"), (Rational(1,2), "(q_0_1_1,p_2)")},
     )
     program = Program(

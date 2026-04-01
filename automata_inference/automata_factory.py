@@ -4,6 +4,7 @@ import itertools
 from abc import ABC, abstractmethod
 from typing import TypeVar
 from fractions import Fraction
+from copy import deepcopy
 
 from scipy.optimize import linprog
 import numpy as np
@@ -102,17 +103,20 @@ class PGA(Automaton):
 
     def _construct_marginalized_transition_matrix(self, states: list[str]):
         arr = [[0 for _ in range(len(states))] for _ in range(len(states))]
-        t_matrix = self.transition_matrix
+        print(f"Tmatrix before: {self.transition_matrix}")
+        t_matrix = deepcopy(self.transition_matrix.copy())
 
         # Marginalize all variables
         for v in t_matrix.keys() - CONSTANT_KEY:
             t_matrix[CONSTANT_KEY].extend(t_matrix[v])
+            
         for s, t in itertools.product(states, states):
             match = next((x for x in t_matrix[CONSTANT_KEY] if x[1:] == (s, t)), None)
             if match is not None:
                 pos_s = states.index(s)
                 pos_t = states.index(t)
                 arr[pos_s][pos_t] = match[0]
+        print(f"Tmatrix after: {self.transition_matrix}")
         return arr
 
     def _construct_initial_weights_vector(self, states):
@@ -160,16 +164,16 @@ class PGA(Automaton):
 
         A_eq = np.eye(n) - M
 
+        # B >= 0
         bounds = [(0, None)] * n
 
-        # TODO linprog is numerical, we want symbolic results, may lead to wrong fractions, if the probability mass is a repeating decimal
+        # TODO linprog is numerical, we want symbolic results, may lead to wrong fractions,
+        # if the probability mass is a repeating decimal
         res = linprog(c=I, A_eq=A_eq, b_eq=F, bounds=bounds, method="highs")
 
         if res.success:
-            print(res.fun)
-            return Fraction(str(res.fun)).limit_denominator()   # TODO find better solution
+            return Fraction(str(res.fun)).limit_denominator()  # TODO find better solution
 
-        # TODO error handling?
         print("LP failed:", res.message)
         raise ValueError("LP is infeasible.")
 
@@ -180,10 +184,10 @@ class PGA(Automaton):
             PGA: The normalized posterior distribution.
         """
         probability_mass = self.get_probability_mass()
-        
+
         if probability_mass == 0:
             raise ValueError("Probability mass is equal to 0, normalization undefined")
-        
+
         normalization_coeff = Rational(probability_mass.denominator, probability_mass.numerator)
 
         new_initial_weights = {(normalization_coeff * c, q) for (c, q) in self.initial}
