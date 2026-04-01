@@ -109,7 +109,7 @@ class PGA(Automaton):
         # Marginalize all variables
         for v in t_matrix.keys() - CONSTANT_KEY:
             t_matrix[CONSTANT_KEY].extend(t_matrix[v])
-            
+
         for s, t in itertools.product(states, states):
             match = next((x for x in t_matrix[CONSTANT_KEY] if x[1:] == (s, t)), None)
             if match is not None:
