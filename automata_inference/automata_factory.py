@@ -8,7 +8,7 @@ from copy import deepcopy
 
 from scipy.optimize import linprog
 import numpy as np
-from symengine import Rational
+from symengine import Rational, Matrix, eye
 
 from automata_inference.program_context import ProgramContext
 
@@ -103,7 +103,6 @@ class PGA(Automaton):
 
     def _construct_marginalized_transition_matrix(self, states: list[str]):
         arr = [[0 for _ in range(len(states))] for _ in range(len(states))]
-        print(f"Tmatrix before: {self.transition_matrix}")
         t_matrix = deepcopy(self.transition_matrix.copy())
 
         # Marginalize all variables
@@ -116,7 +115,6 @@ class PGA(Automaton):
                 pos_s = states.index(s)
                 pos_t = states.index(t)
                 arr[pos_s][pos_t] = match[0]
-        print(f"Tmatrix after: {self.transition_matrix}")
         return arr
 
     def _construct_initial_weights_vector(self, states):
@@ -135,6 +133,23 @@ class PGA(Automaton):
                 arr[states.index(s)] = match[0]
         return arr
 
+    def get_probability_mass_lin_eq(self) -> Rational:
+        """Computes the probability mass symbolically by solving a linear equation system."""
+        states = sorted(self.states)
+
+        # Construct the vectors and matrix
+        I = Matrix(self._construct_initial_weights_vector(states))
+        M = Matrix(self._construct_marginalized_transition_matrix(states))
+        F = Matrix(self._construct_final_weights_vector(states))
+        A_eq = eye(M.rows) - M
+        try:
+            B = A_eq.LUsolve(F)
+        except RuntimeError:
+            print("Matrix is singular.")
+            return 0
+        value = I.T @ B
+        return Fraction(str(value[0]))
+    
     def get_probability_mass(self) -> Rational:
         """Calculates the probability mass of the PGA.
 
@@ -183,8 +198,8 @@ class PGA(Automaton):
         Returns:
             PGA: The normalized posterior distribution.
         """
-        probability_mass = self.get_probability_mass()
-
+        #probability_mass = self.get_probability_mass()
+        probability_mass = self.get_probability_mass_lin_eq()
         if probability_mass == 0:
             raise ValueError("Probability mass is equal to 0, normalization undefined")
 
