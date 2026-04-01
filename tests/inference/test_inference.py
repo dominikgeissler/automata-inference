@@ -1,21 +1,20 @@
+import pytest
 from symengine import Rational
 
 from automata_inference.automata_factory import PGA, PGAFactory
+from automata_inference.distributions import NegBinomialDistribution
+from automata_inference.guards import EqGuard, LtGuard, NegGuard
 from automata_inference.program_statements import (
-    SequentialCompositionStatement,
-    CoinflipStatement,
     AssignStatement,
-    IncrementStatement,
+    CoinflipStatement,
     IfStatement,
+    IncrementStatement,
     ObserveStatement,
     Program,
+    SequentialCompositionStatement,
 )
-from automata_inference.guards import EqGuard, NegGuard, LtGuard
-from automata_inference.distributions import NegBinomialDistribution
-
 from tests.utils import compare_dicts_with_unordered_lists
 
-import pytest
 # this is a very bad test but convenient to see whether something breaks
 
 
@@ -98,3 +97,23 @@ def test_ictac_example():
     assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
         f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
     )
+
+def test_inference_undefined_normalization():
+    """Test program where normalized posterior is undefined."""
+    
+    # X := 1 ; observe(X = 0)
+    program = Program(
+        SequentialCompositionStatement(
+            lhs=AssignStatement(
+                "X", 1
+            ),
+            rhs=ObserveStatement(
+                EqGuard("X", 0)
+            )
+        ),
+        True,
+        {"X"}
+    )
+    input_pga = PGAFactory.one(program.variables | {"1"})
+    with pytest.raises(ValueError):
+        program.apply_semantics(input_pga)

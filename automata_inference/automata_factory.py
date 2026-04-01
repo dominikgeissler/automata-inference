@@ -162,14 +162,16 @@ class PGA(Automaton):
 
         bounds = [(0, None)] * n
 
+        # TODO linprog is numerical, we want symbolic results, may lead to wrong fractions, if the probability mass is a repeating decimal
         res = linprog(c=I, A_eq=A_eq, b_eq=F, bounds=bounds, method="highs")
 
         if res.success:
-            return res.fun
+            print(res.fun)
+            return Fraction(str(res.fun)).limit_denominator()   # TODO find better solution
 
         # TODO error handling?
         print("LP failed:", res.message)
-        raise ValueError("idk")
+        raise ValueError("LP is infeasible.")
 
     def normalize(self) -> PGA:
         """Normalizes the PGA by computing the probability mass and weighting the initial weights by its reciprocal.
@@ -177,8 +179,11 @@ class PGA(Automaton):
         Returns:
             PGA: The normalized posterior distribution.
         """
-        probability_mass = Fraction(str(self.get_probability_mass()))
-        assert probability_mass != 0, "Probability mass is equal to 0, normalization undefined"
+        probability_mass = self.get_probability_mass()
+        
+        if probability_mass == 0:
+            raise ValueError("Probability mass is equal to 0, normalization undefined")
+        
         normalization_coeff = Rational(probability_mass.denominator, probability_mass.numerator)
 
         new_initial_weights = {(normalization_coeff * c, q) for (c, q) in self.initial}
