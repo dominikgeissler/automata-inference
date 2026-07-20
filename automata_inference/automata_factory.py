@@ -6,8 +6,6 @@ from typing import TypeVar
 from fractions import Fraction
 from copy import deepcopy
 
-from scipy.optimize import linprog
-import numpy as np
 from symengine import Rational, Matrix, eye
 
 from automata_inference.program_context import ProgramContext

@@ -18,4 +18,4 @@ max-line-length=120
 notes=FIXME,TODO,todo
 
 [BASIC]
-good-names=A_eq,I,M,F
+good-names=A_eq,I,M,F,B
