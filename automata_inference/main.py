@@ -10,4 +10,4 @@ out = program.apply_semantics(input_pga)
 
 print(f"Duration: {time.time() - start}")
 visualize(out, "result", view=True)
-print(out.get_probability_mass_lin_eq())
+print(out.get_probability_mass())

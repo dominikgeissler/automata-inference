@@ -133,8 +133,11 @@ class PGA(Automaton):
                 arr[states.index(s)] = match[0]
         return arr
 
-    def get_probability_mass_lin_eq(self) -> Rational:
+    def get_probability_mass(self) -> Rational:
         """Computes the probability mass symbolically by solving a linear equation system."""
+        #
+        #   The automaton has to be minimized, otherwise the linear equation system may be infeasible.
+        #
         states = sorted(self.states)
 
         # Construct the vectors and matrix
@@ -145,52 +148,10 @@ class PGA(Automaton):
         try:
             B = A_eq.LUsolve(F)
         except RuntimeError:
-            print("Matrix is singular.")
+            print("Matrix is singular.")    # Should never be the case
             return 0
         value = I.T @ B
         return Fraction(str(value[0]))
-    
-    def get_probability_mass(self) -> Rational:
-        """Calculates the probability mass of the PGA.
-
-        Returns:
-            Rational: The probability mass of the PGA.
-        """
-        states = sorted(self.states)
-
-        # Construct the vectors and matrix
-        I = np.array(self._construct_initial_weights_vector(states))
-        M = np.array(self._construct_marginalized_transition_matrix(states))
-        F = np.array(self._construct_final_weights_vector(states))
-        n = len(states)
-
-        # We want to solve the linear program
-        #   min     I*B
-        #   s.t.    B = M*B + F
-        #           B >= 0
-        # where B is our decision vector.
-        # We rewrite the first constraint as
-        #
-        #           (I_d - M)*B = F
-        #           ^----------^
-        #               A_eq
-        #
-        # to fit the equality constraint of scipy.
-
-        A_eq = np.eye(n) - M
-
-        # B >= 0
-        bounds = [(0, None)] * n
-
-        # TODO linprog is numerical, we want symbolic results, may lead to wrong fractions,
-        # if the probability mass is a repeating decimal
-        res = linprog(c=I, A_eq=A_eq, b_eq=F, bounds=bounds, method="highs")
-
-        if res.success:
-            return Fraction(str(res.fun)).limit_denominator()  # TODO find better solution
-
-        print("LP failed:", res.message)
-        raise ValueError("LP is infeasible.")
 
     def normalize(self) -> PGA:
         """Normalizes the PGA by computing the probability mass and weighting the initial weights by its reciprocal.
@@ -199,7 +160,7 @@ class PGA(Automaton):
             PGA: The normalized posterior distribution.
         """
         #probability_mass = self.get_probability_mass()
-        probability_mass = self.get_probability_mass_lin_eq()
+        probability_mass = self.get_probability_mass()
         if probability_mass == 0:
             raise ValueError("Probability mass is equal to 0, normalization undefined")
 
