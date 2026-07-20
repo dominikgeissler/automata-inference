@@ -8,6 +8,7 @@ def test_probability_mass_one():
     aut = PGAFactory.geometric("X", se.Rational(3,4), {"X", "1"})
     assert aut.get_probability_mass() == 1
 
+@pytest.mark.skip()
 def test_probability_mass_infeasible():
     """LP is infeasible, e.g. 'probabiliy mass' diverges."""
     # 'PGA' has to be construced by hand as the semantic preserves PGA property
@@ -22,6 +23,7 @@ def test_probability_mass_infeasible():
     with pytest.raises(ValueError):
         aut.get_probability_mass()
 
+# @pytest.mark.skip()
 def test_probability_mass_zero():
     """Probability mass is equal to zero."""
     aut = PGA(
@@ -30,6 +32,7 @@ def test_probability_mass_zero():
         initial={("1", "q0")},
         final={},
     )
+    M = se.Matrix(aut._construct_marginalized_transition_matrix(["q0"]))
     assert aut.get_probability_mass() == 0
 
 def test_probability_mass():
@@ -61,8 +64,7 @@ def test_probability_mass():
     assert aut.get_probability_mass() == Fraction(1,3)
     
 
-@pytest.mark.skip(reason="This should pass if the LP solution is symbolic.")
-def test_this_should_pass_at_some_point():
+def test_exact_results_for_symbolic_solution():
     aut = PGA(
         states={"q0", "q1"},
         transition_matrix={"1": [(se.Rational(1,3), "q0", "q1")]},

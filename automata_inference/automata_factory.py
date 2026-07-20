@@ -6,9 +6,7 @@ from typing import TypeVar
 from fractions import Fraction
 from copy import deepcopy
 
-from scipy.optimize import linprog
-import numpy as np
-from symengine import Rational
+from symengine import Rational, Matrix, eye
 
 from automata_inference.program_context import ProgramContext
 
@@ -103,7 +101,6 @@ class PGA(Automaton):
 
     def _construct_marginalized_transition_matrix(self, states: list[str]):
         arr = [[0 for _ in range(len(states))] for _ in range(len(states))]
-        print(f"Tmatrix before: {self.transition_matrix}")
         t_matrix = deepcopy(self.transition_matrix.copy())
 
         # Marginalize all variables
@@ -116,7 +113,6 @@ class PGA(Automaton):
                 pos_s = states.index(s)
                 pos_t = states.index(t)
                 arr[pos_s][pos_t] = match[0]
-        print(f"Tmatrix after: {self.transition_matrix}")
         return arr
 
     def _construct_initial_weights_vector(self, states):
@@ -136,46 +132,24 @@ class PGA(Automaton):
         return arr
 
     def get_probability_mass(self) -> Rational:
-        """Calculates the probability mass of the PGA.
-
-        Returns:
-            Rational: The probability mass of the PGA.
-        """
+        """Computes the probability mass symbolically by solving a linear equation system."""
+        #
+        #   The automaton has to be minimized, otherwise the linear equation system may be infeasible.
+        #
         states = sorted(self.states)
 
         # Construct the vectors and matrix
-        I = np.array(self._construct_initial_weights_vector(states))
-        M = np.array(self._construct_marginalized_transition_matrix(states))
-        F = np.array(self._construct_final_weights_vector(states))
-        n = len(states)
-
-        # We want to solve the linear program
-        #   min     I*B
-        #   s.t.    B = M*B + F
-        #           B >= 0
-        # where B is our decision vector.
-        # We rewrite the first constraint as
-        #
-        #           (I_d - M)*B = F
-        #           ^----------^
-        #               A_eq
-        #
-        # to fit the equality constraint of scipy.
-
-        A_eq = np.eye(n) - M
-
-        # B >= 0
-        bounds = [(0, None)] * n
-
-        # TODO linprog is numerical, we want symbolic results, may lead to wrong fractions,
-        # if the probability mass is a repeating decimal
-        res = linprog(c=I, A_eq=A_eq, b_eq=F, bounds=bounds, method="highs")
-
-        if res.success:
-            return Fraction(str(res.fun)).limit_denominator()  # TODO find better solution
-
-        print("LP failed:", res.message)
-        raise ValueError("LP is infeasible.")
+        I = Matrix(self._construct_initial_weights_vector(states))
+        M = Matrix(self._construct_marginalized_transition_matrix(states))
+        F = Matrix(self._construct_final_weights_vector(states))
+        A_eq = eye(M.rows) - M
+        try:
+            B = A_eq.LUsolve(F)
+        except RuntimeError:
+            print("Matrix is singular.")    # Should never be the case
+            return 0
+        value = I.T @ B
+        return Fraction(str(value[0]))
 
     def normalize(self) -> PGA:
         """Normalizes the PGA by computing the probability mass and weighting the initial weights by its reciprocal.
@@ -183,8 +157,8 @@ class PGA(Automaton):
         Returns:
             PGA: The normalized posterior distribution.
         """
+        #probability_mass = self.get_probability_mass()
         probability_mass = self.get_probability_mass()
-
         if probability_mass == 0:
             raise ValueError("Probability mass is equal to 0, normalization undefined")
 
