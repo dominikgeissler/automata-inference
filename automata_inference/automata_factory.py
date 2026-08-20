@@ -130,6 +130,7 @@ class PGA(Automaton):
             if match is not None:
                 arr[states.index(s)] = match[0]
         return arr
+    
 
     def get_probability_mass(self) -> Rational:
         """Computes the probability mass symbolically by solving a linear equation system."""
@@ -426,7 +427,6 @@ def remove_noncoaccessible_states(aut: T, indeterminates: set[str]) -> T:
         Automaton: The automaton without unreachable / non-coaccessible states.
     """
     is_pga = isinstance(aut, PGA)  # or any(isinstance(el, tuple) for el in aut.initial | aut.final)
-
     # Remove zero initial / final weights
     aut.initial = {el for el in aut.initial if el[0] != 0}
     aut.final = {el for el in aut.final if el[0] != 0}
