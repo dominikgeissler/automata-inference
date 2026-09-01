@@ -1,7 +1,10 @@
-from automata_inference.automata_factory import PGAFactory, PGA
-import symengine as se
-import pytest
 from fractions import Fraction
+
+import pytest
+import symengine as se
+
+from automata_inference.automata_factory import PGA, PGAFactory
+
 
 def test_probability_mass_one():
     """Computes the probability mass where the mass is equal to one."""
@@ -11,7 +14,7 @@ def test_probability_mass_one():
 @pytest.mark.skip()
 def test_probability_mass_infeasible():
     """LP is infeasible, e.g. 'probabiliy mass' diverges."""
-    # 'PGA' has to be construced by hand as the semantic preserves PGA property
+    # 'PGA' has to be construced by hand as the semantics preserves PGA property
     aut = PGA(
         states={"q0"},
         transition_matrix={"1": [(1, "q0", "q0")]},
@@ -32,7 +35,6 @@ def test_probability_mass_zero():
         initial={("1", "q0")},
         final={},
     )
-    M = se.Matrix(aut._construct_marginalized_transition_matrix(["q0"]))
     assert aut.get_probability_mass() == 0
 
 def test_probability_mass():

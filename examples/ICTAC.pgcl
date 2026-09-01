@@ -9,3 +9,5 @@ if (R = 0) {
     X += negbinom(2, 1/2);
 }
 observe(X >= 2);
+
+?Pr[R = 0]

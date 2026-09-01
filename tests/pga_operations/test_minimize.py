@@ -1,5 +1,6 @@
 from symengine import Rational
-from automata_inference.automata_factory import PGAFactory, remove_noncoaccessible_states, PGA
+
+from automata_inference.automata_factory import PGA, PGAFactory, remove_noncoaccessible_states
 from tests.utils import compare_dicts_with_unordered_lists
 
 
