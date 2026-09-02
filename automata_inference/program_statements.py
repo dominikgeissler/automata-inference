@@ -135,7 +135,7 @@ class CoinflipStatement(Statement):
 class IfStatement(Statement):
     """The if statement `if(guard) { then_statenent } else { else_statement }`."""
 
-    def __init__(self, guard: Guard, then_statement: Statement, else_statement: Statement | None=None):
+    def __init__(self, guard: Guard, then_statement: Statement, else_statement: Statement | None = None):
         """Creates a new IfStatement.
 
         Args:
@@ -151,7 +151,7 @@ class IfStatement(Statement):
         print(f"Calculating {str(self)}...")
         guard_dfa = self.guard.to_dfa(context)
         neg_guard_dfa = DFAFactory.neg(guard_dfa)
-        if self.else_statement: 
+        if self.else_statement:
             return self.then_statement.apply_semantics(pga.product(guard_dfa, context), context).weighted_union(
                 self.else_statement.apply_semantics(pga.product(neg_guard_dfa, context), context), 1, 1
             )
@@ -160,7 +160,11 @@ class IfStatement(Statement):
         )
 
     def __str__(self):
-        return f"if({self.guard}) then {{ {self.then_statement} }} else {{ {self.else_statement} }}" if self.else_statement else f"if({self.guard}) then {{ {self.then_statement} }}"
+        return (
+            f"if({self.guard}) then {{ {self.then_statement} }} else {{ {self.else_statement} }}"
+            if self.else_statement
+            else f"if({self.guard}) then {{ {self.then_statement} }}"
+        )
 
 
 class MonusStatement(Statement):
@@ -224,7 +228,7 @@ class SequentialCompositionStatement(Statement):
 class Program:
     """Models a ReDiP program"""
 
-    def __init__(self, body: Statement, is_observe: bool, variables: set[str], query: Query | None=None):
+    def __init__(self, body: Statement, is_observe: bool, variables: set[str], query: Query | None = None):
         """Creates a new program.
 
         Args:
