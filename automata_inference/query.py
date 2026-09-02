@@ -43,6 +43,9 @@ class ProbabilityQuery(Query):
     def __init__(self, guard: Guard):
         self.guard = guard
 
+    def __str__(self):
+        return f"?Pr[{self.guard}]"
+
     def evaluate(self, pga: PGA):
         context = ProgramContext(set(pga.transition_matrix.keys()))
         product = pga.product(self.guard.to_dfa(context), context)
@@ -56,6 +59,9 @@ class MomentQuery(Query):
     def __init__(self, indeterminate: str, moment: int):
         self.indeterminate = indeterminate
         self.moment = moment
+    
+    def __str__(self):
+        return f"?E[{self.indeterminate}, {self.moment}]"
 
     def evaluate(self, pga: PGA):
         pga_states = sorted(pga.states)
@@ -112,6 +118,9 @@ class MixedMomentQuery(Query):
     def __init__(self, indeterminate1: str, indeterminate2: str):
         self.indeterminate1 = indeterminate1
         self.indeterminate2 = indeterminate2
+        
+    def __str__(self):
+        return f"?E[{self.indeterminate1}, {self.indeterminate2}]"
 
     def evaluate(self, pga: PGA):
         pga_states = sorted(pga.states)
