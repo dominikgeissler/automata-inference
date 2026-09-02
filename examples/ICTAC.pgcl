@@ -13,5 +13,4 @@ if (R = 0) {
 // We have filed at least 2 claims
 observe(X >= 2);
 
-// ?Pr[R != 0]
-?E[X, R]
+?Pr[R != 0]
