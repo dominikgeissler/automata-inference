@@ -9,6 +9,7 @@ from automata_inference.program_context import ProgramContext
 
 
 def _has_transition(d: dict, x: str | set[str], s: str, t: str) -> Rational:
+    """Helper function to return the weight of a transition between two states (if it exists) or 0 otherwise"""
     if isinstance(x, set):
         for v in x:
             values = d[v]
@@ -62,7 +63,7 @@ class MomentQuery(Query):
         # i represents the layer
         new_states = {f"({q},{i})" for q in range(len(pga_states)) for i in range(self.moment + 1)}
 
-        new_transition_matrix = {"1": []}
+        new_transition_matrix: dict[str, list[tuple[Rational, str, str]]] = {"1": []}
 
         # Different Layer transitions
         new_transition_matrix["1"].extend(
@@ -115,27 +116,27 @@ class MixedMomentQuery(Query):
         pga_states = sorted(pga.states)
         new_states = {f"({q},{i})" for q in range(len(pga_states)) for i in range(4)}
 
-        new_transition_matrix = {"1": []}
+        new_transition_matrix: dict[str, list[tuple[Rational, str, str]]] = {"1": []}
 
         for i in range(4):
             for j in range(4):
-                for s in range(len(pga_states)):
-                    for t in range(len(pga_states)):
+                for s in pga_states:
+                    for t in pga_states:
                         if (
                             (
                                 i == j
                                 and _has_transition(
                                     pga.transition_matrix,
                                     set(pga.transition_matrix.keys()),
-                                    pga_states[s],
-                                    pga_states[t],
+                                    s,
+                                    t,
                                 )
                             )
                             or (
                                 i == 1
                                 and j == 0
                                 and _has_transition(
-                                    pga.transition_matrix, self.indeterminate1, pga_states[s], pga_states[t]
+                                    pga.transition_matrix, self.indeterminate1, s, t
                                 )
                                 != 0
                             )
@@ -143,7 +144,7 @@ class MixedMomentQuery(Query):
                                 i == 2
                                 and j == 0
                                 and _has_transition(
-                                    pga.transition_matrix, self.indeterminate2, pga_states[s], pga_states[t]
+                                    pga.transition_matrix, self.indeterminate2, s, t
                                 )
                                 != 0
                             )
@@ -151,7 +152,7 @@ class MixedMomentQuery(Query):
                                 i == 3
                                 and j == 1
                                 and _has_transition(
-                                    pga.transition_matrix, self.indeterminate2, pga_states[s], pga_states[t]
+                                    pga.transition_matrix, self.indeterminate2, s, t
                                 )
                                 != 0
                             )
@@ -159,7 +160,7 @@ class MixedMomentQuery(Query):
                                 i == 3
                                 and j == 2
                                 and _has_transition(
-                                    pga.transition_matrix, self.indeterminate1, pga_states[s], pga_states[t]
+                                    pga.transition_matrix, self.indeterminate1, s, t
                                 )
                                 != 0
                             )
@@ -169,11 +170,11 @@ class MixedMomentQuery(Query):
                                     _has_transition(
                                         pga.transition_matrix,
                                         set(pga.transition_matrix.keys()),
-                                        pga_states[s],
-                                        pga_states[t],
+                                        s,
+                                        t,
                                     ),
-                                    f"({s},{i})",
-                                    f"({t},{j})",
+                                    f"({pga_states.index(s)},{i})",
+                                    f"({pga_states.index(t)},{j})",
                                 )
                             )
 

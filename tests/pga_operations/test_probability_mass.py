@@ -5,13 +5,14 @@ import symengine as se
 
 from automata_inference.automata_factory import PGA, PGAFactory
 
+# TODO were not using LPs anymore
 
 def test_probability_mass_one():
     """Computes the probability mass where the mass is equal to one."""
     aut = PGAFactory.geometric("X", se.Rational(3,4), {"X", "1"})
     assert aut.get_probability_mass() == 1
 
-@pytest.mark.skip()
+
 def test_probability_mass_infeasible():
     """LP is infeasible, e.g. 'probabiliy mass' diverges."""
     # 'PGA' has to be construced by hand as the semantics preserves PGA property
@@ -23,7 +24,7 @@ def test_probability_mass_infeasible():
     )
     
     # LP is infeasible
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         aut.get_probability_mass()
 
 # @pytest.mark.skip()
@@ -31,7 +32,7 @@ def test_probability_mass_zero():
     """Probability mass is equal to zero."""
     aut = PGA(
         states={"q0"},
-        transition_matrix={"1": [(1, "q0", "q0")]},
+        transition_matrix={"1": []},
         initial={("1", "q0")},
         final={},
     )

@@ -143,11 +143,7 @@ class PGA(Automaton):
         M = Matrix(self._construct_marginalized_transition_matrix(states))
         F = Matrix(self._construct_final_weights_vector(states))
         A_eq = eye(M.rows) - M
-        try:
-            B = A_eq.LUsolve(F)
-        except RuntimeError:
-            print("Matrix is singular.")  # Should never be the case
-            return 0
+        B = A_eq.LUsolve(F)
         value = I.T @ B
         return Fraction(str(value[0]))
 
