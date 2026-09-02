@@ -39,7 +39,7 @@ GRAMMAR = r"""
 %import common.INT
 %import common.WS
 
-program: declarations statements query*
+program: declarations statements query?
 
 declarations:    declaration*   -> declarations
 statements:      statement*     -> statements
