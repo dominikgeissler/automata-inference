@@ -6,7 +6,6 @@ from symengine import Rational
 from automata_inference.automata_factory import PGA, minimize
 from automata_inference.guards import Guard
 from automata_inference.program_context import ProgramContext
-from automata_inference.visualizer import visualize
 
 
 def _has_transition(d: dict, x: str | set[str], s: str, t: str) -> Rational:
@@ -26,8 +25,8 @@ def _has_transition(d: dict, x: str | set[str], s: str, t: str) -> Rational:
 
 
 class Query(ABC):
-    """Represents an abstract query.
-    """
+    """Represents an abstract query."""
+
     @abstractmethod
     def evaluate(self, pga: PGA) -> Rational:
         """Evaluates the query on the given PGA.
@@ -38,10 +37,13 @@ class Query(ABC):
 
 
 class ProbabilityQuery(Query):
-    """Queries the PGA for a posterior probability.
-    """
+    """Queries the PGA for a posterior probability."""
+
     def __init__(self, guard: Guard):
         self.guard = guard
+
+    def __str__(self):
+        return f"?Pr[{self.guard}]"
 
     def evaluate(self, pga: PGA):
         context = ProgramContext(set(pga.transition_matrix.keys()))
@@ -51,11 +53,14 @@ class ProbabilityQuery(Query):
 
 
 class MomentQuery(Query):
-    """Computes the n-th moment of a variable in the PGA.
-    """
+    """Computes the n-th moment of a variable in the PGA."""
+
     def __init__(self, indeterminate: str, moment: int):
         self.indeterminate = indeterminate
         self.moment = moment
+
+    def __str__(self):
+        return f"?E[{self.indeterminate}, {self.moment}]"
 
     def evaluate(self, pga: PGA):
         pga_states = sorted(pga.states)
@@ -109,9 +114,13 @@ class MomentQuery(Query):
 
 class MixedMomentQuery(Query):
     """Computes the mixed moment of two variables in the PGA."""
+
     def __init__(self, indeterminate1: str, indeterminate2: str):
         self.indeterminate1 = indeterminate1
         self.indeterminate2 = indeterminate2
+
+    def __str__(self):
+        return f"?E[{self.indeterminate1}, {self.indeterminate2}]"
 
     def evaluate(self, pga: PGA):
         pga_states = sorted(pga.states)
@@ -136,34 +145,22 @@ class MixedMomentQuery(Query):
                             or (
                                 i == 1
                                 and j == 0
-                                and _has_transition(
-                                    pga.transition_matrix, self.indeterminate1, s, t
-                                )
-                                != 0
+                                and _has_transition(pga.transition_matrix, self.indeterminate1, s, t) != 0
                             )
                             or (
                                 i == 2
                                 and j == 0
-                                and _has_transition(
-                                    pga.transition_matrix, self.indeterminate2, s, t
-                                )
-                                != 0
+                                and _has_transition(pga.transition_matrix, self.indeterminate2, s, t) != 0
                             )
                             or (
                                 i == 3
                                 and j == 1
-                                and _has_transition(
-                                    pga.transition_matrix, self.indeterminate2, s, t
-                                )
-                                != 0
+                                and _has_transition(pga.transition_matrix, self.indeterminate2, s, t) != 0
                             )
                             or (
                                 i == 3
                                 and j == 2
-                                and _has_transition(
-                                    pga.transition_matrix, self.indeterminate1, s, t
-                                )
-                                != 0
+                                and _has_transition(pga.transition_matrix, self.indeterminate1, s, t) != 0
                             )
                         ):
                             new_transition_matrix["1"].append(
