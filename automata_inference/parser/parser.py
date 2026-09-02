@@ -51,7 +51,7 @@ statement:      "skip"                              -> skip
         |       var "+=" rhs                        -> increment
         |       var "--"                            -> monus
         |       block "[" frac "]" block            -> probchoice
-        |       "if" par_block block "else"? block  -> if
+        |       "if" par_block block ("else" block)?  -> if
         |       "observe" par_block                 -> observe
         |       "while" par_block block             -> while
 
@@ -70,7 +70,7 @@ guard:  var "<" INT             -> lt
     |   var ">" INT             -> gt
     |   var "!=" INT            -> neq
     |   guard "->" guard        -> impl
-    |   guard "&&" guard        -> land
+    |    guard "&&" guard       -> land
     |   guard "||" guard        -> lor
     |   "!" par_block           -> neg
 
@@ -122,16 +122,19 @@ def _parse_tree(tree: Tree) -> Program:
     declarations = _parse_declarations(tree.children[0])
     variables = set(declarations)
     statements = _parse_statements(tree.children[1], variables)
-    query = None
     if len(tree.children) > 2:
         query = _parse_query(tree.children[2], variables)
-    # todo add query to program
+        return Program(
+            _statement_list_to_sequential_comp(statements) if statements else statements,
+            any(isinstance(st, ObserveStatement) for st in statements),
+            variables,
+            query
+        )
     return Program(
-        _statement_list_to_sequential_comp(statements) if statements else statements,
-        any(isinstance(st, ObserveStatement) for st in statements),
-        variables,
-        query
-    )
+                _statement_list_to_sequential_comp(statements) if statements else statements,
+                any(isinstance(st, ObserveStatement) for st in statements),
+                variables
+            )
 
 
 # === Declarations ===
@@ -195,9 +198,10 @@ def _parse_statement_probchoice(tree: Tree, variables: set[str]) -> CoinflipStat
 def _parse_statement_if(tree: Tree, variables):
     guard = _parse_guard(tree.children[0].children[0], variables)
     then_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[1], variables))
-    else_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[2], variables))
-    return IfStatement(guard, then_statement, else_statement)
-
+    if len(tree.children) > 2:
+        else_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[2], variables))
+        return IfStatement(guard, then_statement, else_statement)
+    return IfStatement(guard, then_statement)
 
 def _parse_statement_observe(tree: Tree, variables: set[str]):
     guard = _parse_guard(tree.children[0].children[0], variables)
