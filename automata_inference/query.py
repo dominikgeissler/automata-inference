@@ -6,6 +6,7 @@ from symengine import Rational
 from automata_inference.automata_factory import PGA, minimize
 from automata_inference.guards import Guard
 from automata_inference.program_context import ProgramContext
+from automata_inference.visualizer import visualize
 
 
 def _has_transition(d: dict, x: str | set[str], s: str, t: str) -> Rational:

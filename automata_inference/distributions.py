@@ -36,7 +36,7 @@ class BernoulliDistribution(Distribution):
         return PGAFactory.bernoulli(self.indeterminate, self.p, context.indeterminates)
 
     def __str__(self):
-        return f"Binom({self.p})"
+        return f"Bern({self.p})"
 
 
 class NegBinomialDistribution(Distribution):

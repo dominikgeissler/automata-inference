@@ -1,13 +1,17 @@
 var R;
 var X;
 
-// We assume that all variables have the value of 0 at start
+// A customer is of low-risk with probability 9/10
 { R := 0 } [9/10] { R := 1 };
+
+// A high-risk customer files on average twice the number of claims
 if (R = 0) {
-    X += negbinom(1, 1/2);
+    X += NegBinom(1, 1/2);
 } else {
-    X += negbinom(2, 1/2);
+    X += NegBinom(2, 1/2);
 }
+// We have filed at least 2 claims
 observe(X >= 2);
 
-?Pr[R = 0]
+// ?Pr[R != 0]
+?E[X, R]

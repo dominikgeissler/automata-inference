@@ -79,11 +79,11 @@ rhs:    INT                                     -> const
     |   distribution                            -> distribution
     |   var                                     -> var
 
-distribution:   "unif" "(" INT ")"                  -> uniform
-        |       "geom" "(" frac")"                  -> geometric
-        |       "negbinom" "(" INT "," frac ")"     -> negbinom
-        |       "bernoulli" "(" frac ")"            -> bernoulli
-        |       "dirac" "(" INT ")"                 -> dirac
+distribution:   "Unif" "(" INT ")"                  -> uniform
+        |       "Geom" "(" frac")"                  -> geometric
+        |       "NegBinom" "(" INT "," frac ")"     -> negbinom
+        |       "Bern" "(" frac ")"                 -> bernoulli
+        |       "Dirac" "(" INT ")"                 -> dirac
 
 frac:   INT "/" INT     -> frac
 
