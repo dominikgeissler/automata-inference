@@ -51,7 +51,7 @@ statement:      "skip"                              -> skip
         |       var "+=" rhs                        -> increment
         |       var "--"                            -> monus
         |       block "[" frac "]" block            -> probchoice
-        |       "if" par_block block "else"? block  -> if
+        |       "if" par_block block ("else" block)?  -> if
         |       "observe" par_block                 -> observe
         |       "while" par_block block             -> while
 
@@ -122,15 +122,18 @@ def _parse_tree(tree: Tree) -> Program:
     declarations = _parse_declarations(tree.children[0])
     variables = set(declarations)
     statements = _parse_statements(tree.children[1], variables)
-    query = None
     if len(tree.children) > 2:
         query = _parse_query(tree.children[2], variables)
-    # todo add query to program
+        return Program(
+            _statement_list_to_sequential_comp(statements) if statements else statements,
+            any(isinstance(st, ObserveStatement) for st in statements),
+            variables,
+            query,
+        )
     return Program(
         _statement_list_to_sequential_comp(statements) if statements else statements,
         any(isinstance(st, ObserveStatement) for st in statements),
         variables,
-        query
     )
 
 
@@ -195,8 +198,10 @@ def _parse_statement_probchoice(tree: Tree, variables: set[str]) -> CoinflipStat
 def _parse_statement_if(tree: Tree, variables):
     guard = _parse_guard(tree.children[0].children[0], variables)
     then_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[1], variables))
-    else_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[2], variables))
-    return IfStatement(guard, then_statement, else_statement)
+    if len(tree.children) > 2:
+        else_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[2], variables))
+        return IfStatement(guard, then_statement, else_statement)
+    return IfStatement(guard, then_statement)
 
 
 def _parse_statement_observe(tree: Tree, variables: set[str]):
@@ -226,7 +231,7 @@ def _parse_rhs(tree: Tree, indeterminate: str, variables: set[str]):
     raise ValueError(f"Unknown rhs, {tree.data}")
 
 
-def _parse_var(tree: Tree, variables: set[str], check_variables: bool =True) -> str:
+def _parse_var(tree: Tree, variables: set[str], check_variables: bool = True) -> str:
     indeterminate = str(tree.children[0])
     if indeterminate not in variables and check_variables:
         raise ValueError(f"Variable {indeterminate} not defined.")
@@ -335,7 +340,7 @@ def _parse_guard_eq(tree: Tree, variables: set[str]) -> EqGuard:
 def _parse_guard_leq(tree: Tree, variables: set[str]) -> Guard:
     indeterminate = _parse_var(tree.children[0], variables)
     n = _parse_int(tree.children[1])
-    return LtGuard(indeterminate, n+1)
+    return LtGuard(indeterminate, n + 1)
 
 
 def _parse_guard_geq(tree: Tree, variables: set[str]) -> Guard:
@@ -355,15 +360,18 @@ def _parse_guard_land(tree: Tree, variables: set[str]) -> LandGuard:
     guard2 = _parse_guard(tree.children[1], variables)
     return LandGuard(guard1, guard2)
 
+
 def _parse_guard_neq(tree: Tree, variables: set[str]) -> NegGuard:
     indeterminate = _parse_var(tree.children[0], variables)
     n = _parse_int(tree.children[1])
     return NegGuard(EqGuard(indeterminate, n))
 
+
 def _parse_guard_lor(tree: Tree, variables: set[str]) -> NegGuard:
     guard_1 = _parse_guard(tree.children[0], variables)
     guard_2 = _parse_guard(tree.children[0], variables)
     return NegGuard(LandGuard(NegGuard(guard_1), NegGuard(guard_2)))
+
 
 def _parse_guard_impl(tree: Tree, variables: set[str]) -> NegGuard:
     guard_1 = _parse_guard(tree.children[0], variables)
@@ -385,9 +393,11 @@ def _statement_list_to_sequential_comp(statements: list[Statement]) -> Statement
         statements[-1],
     )
 
+
 # == Query ==
 
-def _parse_query(tree:  Tree, variables: set[str]) -> Query:
+
+def _parse_query(tree: Tree, variables: set[str]) -> Query:
     if tree.data == "posterior_prob":
         return _parse_query_posterior_prob(tree.children[0], variables)
     if tree.data == "moment":
@@ -396,17 +406,19 @@ def _parse_query(tree:  Tree, variables: set[str]) -> Query:
         return _parse_query_mixed_moment(tree, variables)
     raise ValueError(f"Unknown query, {tree.data}")
 
+
 def _parse_query_posterior_prob(tree: Tree, variables: set[str]):
     guard = _parse_guard(tree, variables)
     return ProbabilityQuery(guard)
+
 
 def _parse_query_moment(tree: Tree, variables: set[str]):
     indeterminate = _parse_var(tree.children[0], variables)
     moment = _parse_int(tree.children[1])
     return MomentQuery(indeterminate, moment)
 
+
 def _parse_query_mixed_moment(tree: Tree, variables: set[str]):
     indeterminate1 = _parse_var(tree.children[0], variables)
     indeterminate2 = _parse_var(tree.children[1], variables)
     return MixedMomentQuery(indeterminate1, indeterminate2)
-    
