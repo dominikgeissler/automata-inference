@@ -20,5 +20,5 @@ poetry install --only main
 ```
 * Run the main program
 ```bash
-python automata_inference/main.py
+python automata_inference/main.py <program_file>
 ```
