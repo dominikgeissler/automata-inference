@@ -84,6 +84,7 @@ def test_ictac_example():
         ),
         True,
         {"X", "R"},
+        None
     )
     input_pga = PGAFactory.one(program.variables | {"1"})
     actual = program.apply_semantics(input_pga)
@@ -111,7 +112,8 @@ def test_inference_undefined_normalization():
             )
         ),
         True,
-        {"X"}
+        {"X"},
+        None
     )
     input_pga = PGAFactory.one(program.variables | {"1"})
     with pytest.raises(ValueError):

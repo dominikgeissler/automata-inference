@@ -1,5 +1,6 @@
-from automata_inference.automata_factory import PGA, Automaton
 from graphviz import Digraph
+
+from automata_inference.automata_factory import PGA, Automaton
 
 CONSTANT_KEY = "1"
 

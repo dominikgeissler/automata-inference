@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import itertools
 from abc import ABC, abstractmethod
-from typing import TypeVar
-from fractions import Fraction
 from copy import deepcopy
+from fractions import Fraction
+from typing import TypeVar
 
-from symengine import Rational, Matrix, eye
+from symengine import Matrix, Rational, eye
 
 from automata_inference.program_context import ProgramContext
 
@@ -130,7 +130,6 @@ class PGA(Automaton):
             if match is not None:
                 arr[states.index(s)] = match[0]
         return arr
-    
 
     def get_probability_mass(self) -> Rational:
         """Computes the probability mass symbolically by solving a linear equation system."""
@@ -147,7 +146,7 @@ class PGA(Automaton):
         try:
             B = A_eq.LUsolve(F)
         except RuntimeError:
-            print("Matrix is singular.")    # Should never be the case
+            print("Matrix is singular.")  # Should never be the case
             return 0
         value = I.T @ B
         return Fraction(str(value[0]))
@@ -158,7 +157,7 @@ class PGA(Automaton):
         Returns:
             PGA: The normalized posterior distribution.
         """
-        #probability_mass = self.get_probability_mass()
+        # probability_mass = self.get_probability_mass()
         probability_mass = self.get_probability_mass()
         if probability_mass == 0:
             raise ValueError("Probability mass is equal to 0, normalization undefined")

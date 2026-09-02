@@ -8,6 +8,7 @@ from automata_inference.program_context import ProgramContext
 from automata_inference.distributions import Distribution, DiracDistribution
 from automata_inference.automata_factory import PGAFactory, DFAFactory, PGA
 from automata_inference.query import Query
+
 CONSTANT_KEY = "1"
 
 
@@ -247,10 +248,17 @@ class Program:
             )
 
             return unnormalized_posterior if not self.is_observe else unnormalized_posterior.normalize()
-        else:
-            return pga
+        return pga
 
-    def evaluate_query(self, pga: PGA):
+    def evaluate_query(self, pga: PGA) -> Rational:
+        """Evaluates the query and returns the quantity.
+
+        Args:
+            pga (PGA): The PGA the query should be evaluated on.
+
+        Returns:
+            Rational: The quantity.
+        """
         assert self.query
         return self.query.evaluate(pga)
 
