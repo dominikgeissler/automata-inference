@@ -1,6 +1,6 @@
 from graphviz import Digraph
 
-from automata_inference.automata_factory import Automaton, PGA
+from automata_inference.automata_factory import PGA, Automaton
 
 CONSTANT_KEY = "1"
 
@@ -13,10 +13,10 @@ def visualize(aut: Automaton, out_path="aut", view=True):
         out_path (str, optional): The path the visualization should be saved at. Defaults to "aut".
         view (bool, optional): Whether the file should be opened automatically. Defaults to True.
     """
+
     dot = Digraph(comment="Automaton visualization")
 
     is_pga = isinstance(aut, PGA)  # or any(isinstance(el, tuple) for el in aut.initial | aut.final)
-
     if not is_pga:
         for state in aut.states:
             dot.node(state, shape="circle")

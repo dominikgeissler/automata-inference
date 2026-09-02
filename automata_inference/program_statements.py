@@ -7,6 +7,7 @@ from automata_inference.guards import Guard
 from automata_inference.program_context import ProgramContext
 from automata_inference.distributions import Distribution, DiracDistribution
 from automata_inference.automata_factory import PGAFactory, DFAFactory, PGA
+from automata_inference.query import Query
 
 CONSTANT_KEY = "1"
 
@@ -219,7 +220,7 @@ class SequentialCompositionStatement(Statement):
 class Program:
     """Models a ReDiP program"""
 
-    def __init__(self, body: Statement, is_observe: bool, variables: set[str]):
+    def __init__(self, body: Statement, is_observe: bool, variables: set[str], query: Query | None):
         """Creates a new program.
 
         Args:
@@ -230,6 +231,7 @@ class Program:
         self.body = body
         self.is_observe = is_observe
         self.variables = variables
+        self.query = query
 
     def apply_semantics(self, pga: PGA) -> PGA:
         """Calculates the semantics of the program given some distribution encoded as PGA.
@@ -240,11 +242,25 @@ class Program:
         Returns:
             PGA: The posterior distribution.
         """
-        unnormalized_posterior = self.body.apply_semantics(
-            pga, ProgramContext(indeterminates=self.variables | {CONSTANT_KEY})
-        )
+        if self.body:
+            unnormalized_posterior = self.body.apply_semantics(
+                pga, ProgramContext(indeterminates=self.variables | {CONSTANT_KEY})
+            )
 
-        return unnormalized_posterior if not self.is_observe else unnormalized_posterior.normalize()
+            return unnormalized_posterior if not self.is_observe else unnormalized_posterior.normalize()
+        return pga
+
+    def evaluate_query(self, pga: PGA) -> Rational:
+        """Evaluates the query and returns the quantity.
+
+        Args:
+            pga (PGA): The PGA the query should be evaluated on.
+
+        Returns:
+            Rational: The quantity.
+        """
+        assert self.query
+        return self.query.evaluate(pga)
 
     def __str__(self):
         return str(self.body)

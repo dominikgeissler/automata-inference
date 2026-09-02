@@ -1,4 +1,5 @@
 from symengine import Rational
+
 from automata_inference.automata_factory import PGA, PGAFactory
 from automata_inference.program_context import ProgramContext
 from tests.utils import compare_dicts_with_unordered_lists

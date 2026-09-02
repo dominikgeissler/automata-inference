@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import itertools
 from abc import ABC, abstractmethod
-from typing import TypeVar
-from fractions import Fraction
 from copy import deepcopy
+from fractions import Fraction
+from typing import TypeVar
 
-from symengine import Rational, Matrix, eye
+from symengine import Matrix, Rational, eye
 
 from automata_inference.program_context import ProgramContext
 
@@ -143,11 +143,7 @@ class PGA(Automaton):
         M = Matrix(self._construct_marginalized_transition_matrix(states))
         F = Matrix(self._construct_final_weights_vector(states))
         A_eq = eye(M.rows) - M
-        try:
-            B = A_eq.LUsolve(F)
-        except RuntimeError:
-            print("Matrix is singular.")    # Should never be the case
-            return 0
+        B = A_eq.LUsolve(F)
         value = I.T @ B
         return Fraction(str(value[0]))
 
@@ -157,7 +153,7 @@ class PGA(Automaton):
         Returns:
             PGA: The normalized posterior distribution.
         """
-        #probability_mass = self.get_probability_mass()
+        # probability_mass = self.get_probability_mass()
         probability_mass = self.get_probability_mass()
         if probability_mass == 0:
             raise ValueError("Probability mass is equal to 0, normalization undefined")
@@ -426,7 +422,6 @@ def remove_noncoaccessible_states(aut: T, indeterminates: set[str]) -> T:
         Automaton: The automaton without unreachable / non-coaccessible states.
     """
     is_pga = isinstance(aut, PGA)  # or any(isinstance(el, tuple) for el in aut.initial | aut.final)
-
     # Remove zero initial / final weights
     aut.initial = {el for el in aut.initial if el[0] != 0}
     aut.final = {el for el in aut.final if el[0] != 0}

@@ -24,6 +24,7 @@ from automata_inference.distributions import (
     NegBinomialDistribution,
     UniformDistribution,
 )
+from automata_inference.query import Query, ProbabilityQuery, MomentQuery, MixedMomentQuery
 
 # Heavily inspired by Philipp Schröers' work:
 # https://github.com/Philipp15b/probably
@@ -38,7 +39,7 @@ GRAMMAR = r"""
 %import common.INT
 %import common.WS
 
-program: declarations statements
+program: declarations statements query?
 
 declarations:    declaration*   -> declarations
 statements:      statement*     -> statements
@@ -53,6 +54,10 @@ statement:      "skip"                              -> skip
         |       "if" par_block block "else"? block  -> if
         |       "observe" par_block                 -> observe
         |       "while" par_block block             -> while
+
+query:      "?Pr[" guard "]"            -> posterior_prob
+        |   "?E[" var "," INT "]"       -> moment
+        |   "?E[" var "," var "]"       -> mixed_moment
 
 block: "{" statement* "}"
 par_block: "(" guard ")"
@@ -117,10 +122,15 @@ def _parse_tree(tree: Tree) -> Program:
     declarations = _parse_declarations(tree.children[0])
     variables = set(declarations)
     statements = _parse_statements(tree.children[1], variables)
+    query = None
+    if len(tree.children) > 2:
+        query = _parse_query(tree.children[2], variables)
+    # todo add query to program
     return Program(
-        _statement_list_to_sequential_comp(statements),
+        _statement_list_to_sequential_comp(statements) if statements else statements,
         any(isinstance(st, ObserveStatement) for st in statements),
         variables,
+        query
     )
 
 
@@ -374,3 +384,29 @@ def _statement_list_to_sequential_comp(statements: list[Statement]) -> Statement
         reversed(statements[:-1]),
         statements[-1],
     )
+
+# == Query ==
+
+def _parse_query(tree:  Tree, variables: set[str]) -> Query:
+    if tree.data == "posterior_prob":
+        return _parse_query_posterior_prob(tree.children[0], variables)
+    if tree.data == "moment":
+        return _parse_query_moment(tree, variables)
+    if tree.data == "mixed_moment":
+        return _parse_query_mixed_moment(tree, variables)
+    raise ValueError(f"Unknown query, {tree.data}")
+
+def _parse_query_posterior_prob(tree: Tree, variables: set[str]):
+    guard = _parse_guard(tree, variables)
+    return ProbabilityQuery(guard)
+
+def _parse_query_moment(tree: Tree, variables: set[str]):
+    indeterminate = _parse_var(tree.children[0], variables)
+    moment = _parse_int(tree.children[1])
+    return MomentQuery(indeterminate, moment)
+
+def _parse_query_mixed_moment(tree: Tree, variables: set[str]):
+    indeterminate1 = _parse_var(tree.children[0], variables)
+    indeterminate2 = _parse_var(tree.children[1], variables)
+    return MixedMomentQuery(indeterminate1, indeterminate2)
+    
