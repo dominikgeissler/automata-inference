@@ -32,7 +32,6 @@ def visualize(aut: Automaton, out_path="aut", view=True):
 
     else:
         for state in aut.initial:
-            print(state)
             dot.node(f"init_{state}", label="", shape="point")
             dot.edge(f"init_{state}", state)
 
