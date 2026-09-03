@@ -1,95 +1,83 @@
 from symengine import Rational
 
-from automata_inference.automata_factory import PGA, DFAFactory, PGAFactory
-from automata_inference.program_context import ProgramContext
-from tests.utils import compare_dicts_with_unordered_lists
+from automata_inference.automata.model import DFA, State, Transition, PGA, ProductState
+from tests.utils import AutomatonTestUtils
+
+create_pga = AutomatonTestUtils.create_pga
+assert_equal_pga = AutomatonTestUtils.assert_equal_pga
 
 
 def test_product_true():
     """Filters nothing"""
-    context = ProgramContext({"X", "Y", "1"})
-    dfa = DFAFactory.neg(DFAFactory.false(context.indeterminates))
-    aut = PGA(
-        {"q_0", "q_1", "q_2", "q_3"},
-        {
-            "X": [(Rational(1, 1), "q_0", "q_1")],
-            "Y": [(Rational(1, 1), "q_1", "q_2")],
-            "1": [(Rational(1, 1), "q_2", "q_3")],
-        },
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_3")},
+    
+    aut = create_pga(0, 3, [(0, 1, "X", Rational(1, 2)), (0, 2, "Y", Rational(1,2))], [(1, 0)], [(1,1), (1,2)])
+    
+    # Models "true"
+    dfa = DFA(
+        {State(1, 0)},
+        [Transition(State(1,0), State(1,0), symbol) for symbol in {"X", "Y"}],
+        {State(1,0)},
+        {State(1,0)}
     )
+    
     expected = PGA(
-        {"(q_0,p_0)", "(q_1,p_0)", "(q_2,p_0)", "(q_3,p_0)"},
-        {
-            "X": [(Rational(1, 1), "(q_0,p_0)", "(q_1,p_0)")],
-            "Y": [(Rational(1, 1), "(q_1,p_0)", "(q_2,p_0)")],
-            "1": [(Rational(1, 1), "(q_2,p_0)", "(q_3,p_0)")],
-        },
-        {(Rational(1, 1), "(q_0,p_0)")},
-        {(Rational(1, 1), "(q_3,p_0)")},
+        {ProductState(State(0, 0), State(1,0)), ProductState(State(0,1), State(1,0)), ProductState(State(0,2), State(1,0))},
+        [
+            Transition(ProductState(State(0, 0), State(1,0)), ProductState(State(0,1), State(1,0)), "X", Rational(1,2)),
+            Transition(ProductState(State(0, 0), State(1,0)), ProductState(State(0,2), State(1,0)), "Y", Rational(1,2))
+        ],
+        {(1, ProductState(State(0, 0), State(1,0)))},
+        {(1, ProductState(State(0,1), State(1,0))), (1, ProductState(State(0,2), State(1,0)))},
     )  # Nothing is filtered
-    actual = aut.product(dfa, context)
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    
+    assert_equal_pga(expected, aut.filter(dfa))
 
 
 def test_product_false():
     """Filters everything."""
-    context = ProgramContext({"X", "Y", "1"})
-    dfa = DFAFactory.false(context.indeterminates)
-    aut = PGA(
-        {"q_0", "q_1", "q_2", "q_3"},
-        {
-            "X": [(Rational(1, 1), "q_0", "q_1")],
-            "Y": [(Rational(1, 1), "q_1", "q_2")],
-            "1": [(Rational(1, 1), "q_2", "q_3")],
-        },
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_3")},
-    )
-    expected = PGAFactory.zero(context.indeterminates)  # Everything is filtered
-    actual = aut.product(dfa, context)
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
-
+    aut = create_pga(0, 3, [(0, 1, "X", Rational(1, 2)), (0, 2, "Y", Rational(1,2))], [(1, 0)], [(1,1), (1,2)])
+    
+    # Models "false"
+    dfa = DFA(
+            {State(1, 0)},
+            [Transition(State(1,0), State(1,0), symbol) for symbol in {"X", "Y"}],
+            {State(1,0)},
+            {}
+        )
+    
+    actual = aut.filter(dfa)
+    
+    # We expect the "zero"-PGA
+    assert len(actual.states) == 1, "Only one state should remain."
+    assert len(actual.transition_matrix) == 0, "No transitions should be present."
+    assert len(actual.final) == 0, "No final states should be present."
 
 def test_product_filter():
     """Filters something."""
-    context = ProgramContext({"X", "1"})
-    dfa = DFAFactory.mod("X", 3, 1, context.indeterminates)
-    aut = PGAFactory.geometric("X", Rational(1, 2), context.indeterminates)
+    
+    # Geometric distribution in X (with parameter 1/2)
+    aut = create_pga(
+        0, 1, [(0,0,"X", Rational(1,2))],[(1, 0)], [(Rational(1,2), 0)]
+    )
+    
+    s,t1, t2 = State(0, 0), State(1, 0), State(1,1)
+    
+    # Models "x mod 2 = 1"
+    dfa = DFA(
+        {t1, t2},
+        [Transition(t1, t2, "X"), Transition(t2, t1, "X")],
+        {t1},
+        {t2}
+    )
+    
+    p1 = ProductState(s, t1)
+    p2 = ProductState(s, t2)
+    
     expected = PGA(
-        {"(q_0,p_0)", "(q_0,p_1)", "(q_0,p_2)"},
-        {
-            "X": [
-                (Rational(1, 2), "(q_0,p_0)", "(q_0,p_1)"),
-                (Rational(1, 2), "(q_0,p_1)", "(q_0,p_2)"),
-                (Rational(1, 2), "(q_0,p_2)", "(q_0,p_0)"),
-            ],
-            "1": [],
-        },
-        {(Rational(1, 1), "(q_0,p_0)")},
-        {(Rational(1, 2), "(q_0,p_1)")},
+        {p1, p2},
+        [Transition(p1, p2, "X", Rational(1,2)), Transition(p2, p1, "X", Rational(1,2))],
+        {(1, p1)},
+        {(Rational(1,2), p2)}
     )
-    actual = aut.product(dfa, context)
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    
+    assert_equal_pga(expected, aut.filter(dfa))

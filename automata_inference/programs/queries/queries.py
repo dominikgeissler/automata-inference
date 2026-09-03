@@ -3,26 +3,9 @@ from math import comb
 
 from symengine import Rational
 
-from automata_inference.automata_factory import PGA, minimize
-from automata_inference.guards import Guard
+from automata_inference.automata.automata_factory import PGA, minimize
+from automata_inference.programs.guards import Guard
 from automata_inference.program_context import ProgramContext
-
-
-def _has_transition(d: dict, x: str | set[str], s: str, t: str) -> Rational:
-    """Helper function to return the weight of a transition between two states (if it exists) or 0 otherwise"""
-    if isinstance(x, set):
-        for v in x:
-            values = d[v]
-            for a, s1, t1 in values:
-                if s == s1 and t == t1:
-                    return a
-    else:
-        values = d[x]
-        for a, s1, t1 in values:
-            if s == s1 and t == t1:
-                return a
-    return 0
-
 
 class Query(ABC):
     """Represents an abstract query."""
@@ -47,7 +30,7 @@ class ProbabilityQuery(Query):
 
     def evaluate(self, pga: PGA):
         context = ProgramContext(set(pga.transition_matrix.keys()))
-        product = pga.product(self.guard.to_dfa(context), context)
+        product = pga.filter(self.guard.to_dfa(context), context)
 
         return minimize(product, set(pga.transition_matrix.keys())).get_probability_mass()
 

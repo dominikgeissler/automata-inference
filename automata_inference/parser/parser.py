@@ -3,7 +3,9 @@ from functools import reduce
 from symengine import Rational
 from lark import Lark, Tree
 
-from automata_inference.program_statements import (
+from automata_inference.parser.grammar import get_grammar
+
+from automata_inference.programs.program_statements import (
     SkipStatement,
     AssignStatement,
     IncrementStatement,
@@ -15,8 +17,8 @@ from automata_inference.program_statements import (
     Statement,
     SequentialCompositionStatement,
 )
-from automata_inference.guards import LtGuard, ModGuard, EqGuard, LandGuard, NegGuard, Guard
-from automata_inference.distributions import (
+from automata_inference.programs.guards import LtGuard, ModGuard, EqGuard, LandGuard, NegGuard, Guard
+from automata_inference.programs.distributions import (
     Distribution,
     DiracDistribution,
     BernoulliDistribution,
@@ -24,72 +26,10 @@ from automata_inference.distributions import (
     NegBinomialDistribution,
     UniformDistribution,
 )
-from automata_inference.query import Query, ProbabilityQuery, MomentQuery, MixedMomentQuery
+from automata_inference.queries import Query, ProbabilityQuery, MomentQuery, MixedMomentQuery
 
 # Heavily inspired by Philipp Schröers' work:
 # https://github.com/Philipp15b/probably
-
-GRAMMAR = r"""
-%ignore /#.*$/m
-%ignore /\/\/.*$/m
-%ignore WS
-%ignore ";"
-
-%import common.CNAME
-%import common.INT
-%import common.WS
-
-program: declarations statements query?
-
-declarations:    declaration*   -> declarations
-statements:      statement*     -> statements
-
-declaration:    "var" var       -> var
-
-statement:      "skip"                              -> skip
-        |       var ":=" rhs                        -> assignment
-        |       var "+=" rhs                        -> increment
-        |       var "--"                            -> monus
-        |       block "[" frac "]" block            -> probchoice
-        |       "if" par_block block ("else" block)?  -> if
-        |       "observe" par_block                 -> observe
-        |       "while" par_block block             -> while
-
-query:      "?Pr[" guard "]"            -> posterior_prob
-        |   "?E[" var "," INT "]"       -> moment
-        |   "?E[" var "," var "]"       -> mixed_moment
-
-block: "{" statement* "}"
-par_block: "(" guard ")"
-
-guard:  var "<" INT             -> lt
-    |   var "%" INT "="? INT    -> mod
-    |   var "=" INT             -> eq
-    |   var "<=" INT            -> leq
-    |   var ">=" INT            -> geq
-    |   var ">" INT             -> gt
-    |   var "!=" INT            -> neq
-    |   guard "->" guard        -> impl
-    |   guard "&&" guard        -> land
-    |   guard "||" guard        -> lor
-    |   "!" par_block           -> neg
-
-rhs:    INT                                     -> const
-    |   "iid" "(" distribution "," var  ")"     -> iid
-    |   distribution                            -> distribution
-    |   var                                     -> var
-
-distribution:   "Unif" "(" INT ")"                  -> uniform
-        |       "Geom" "(" frac")"                  -> geometric
-        |       "NegBinom" "(" INT "," frac ")"     -> negbinom
-        |       "Bern" "(" frac ")"                 -> bernoulli
-        |       "Dirac" "(" INT ")"                 -> dirac
-
-frac:   INT "/" INT     -> frac
-
-var: CNAME
-    """
-
 
 def parse(program_path: str) -> Program:
     """Parses a program from a file.
@@ -113,7 +53,7 @@ def parse_string(program: str) -> Program:
     Returns:
         Program: The parsed program.
     """
-    parser = Lark(GRAMMAR, start="program")
+    parser = Lark(get_grammar(), start="program")
     ast = parser.parse(program)
     return _parse_tree(ast)
 

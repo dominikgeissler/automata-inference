@@ -2,9 +2,9 @@ import time
 
 from argparse import ArgumentParser
 import sys
-from automata_inference.automata_factory import PGAFactory
+from automata_inference.automata.automata_factory import PGAFactory
 from automata_inference.parser.parser import parse
-from automata_inference.visualizer import visualize
+from automata_inference.visualization.visualizer import visualize
 
 
 def main(program_path: str, visualize_posterior: bool):

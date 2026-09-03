@@ -3,10 +3,10 @@ from abc import ABC, abstractmethod
 
 from symengine import Rational
 
-from automata_inference.guards import Guard
+from automata_inference.programs.guards import Guard
 from automata_inference.program_context import ProgramContext
-from automata_inference.distributions import Distribution, DiracDistribution
-from automata_inference.automata_factory import PGAFactory, DFAFactory, PGA
+from automata_inference.programs.distributions import Distribution, DiracDistribution
+from automata_inference.automata.automata_factory import PGAFactory, DFAFactory, PGA
 from automata_inference.query import Query
 
 CONSTANT_KEY = "1"
@@ -152,11 +152,11 @@ class IfStatement(Statement):
         guard_dfa = self.guard.to_dfa(context)
         neg_guard_dfa = DFAFactory.neg(guard_dfa)
         if self.else_statement:
-            return self.then_statement.apply_semantics(pga.product(guard_dfa, context), context).weighted_union(
-                self.else_statement.apply_semantics(pga.product(neg_guard_dfa, context), context), 1, 1
+            return self.then_statement.apply_semantics(pga.filter(guard_dfa, context), context).weighted_union(
+                self.else_statement.apply_semantics(pga.filter(neg_guard_dfa, context), context), 1, 1
             )
-        return self.then_statement.apply_semantics(pga.product(guard_dfa, context), context).weighted_union(
-            pga.product(neg_guard_dfa, context), 1, 1
+        return self.then_statement.apply_semantics(pga.filter(guard_dfa, context), context).weighted_union(
+            pga.filter(neg_guard_dfa, context), 1, 1
         )
 
     def __str__(self):
@@ -198,7 +198,7 @@ class ObserveStatement(Statement):
 
     def apply_semantics(self, pga, context) -> PGA:
         print(f"Calculating {str(self)}...")
-        return pga.product(self.guard.to_dfa(context), context)
+        return pga.filter(self.guard.to_dfa(context), context)
 
     def __str__(self):
         return f"observe({self.guard})"

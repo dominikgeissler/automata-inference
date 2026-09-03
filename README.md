@@ -18,7 +18,7 @@ sudo apt install -y graphviz
 # Python dependencies
 poetry install --only main
 ```
-* Run the main program
+* Run the CLI
 ```bash
-python automata_inference/main.py <program_file>
+python automata_inference/cli.py <program_file>
 ```

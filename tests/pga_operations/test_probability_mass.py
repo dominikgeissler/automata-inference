@@ -1,26 +1,25 @@
 from fractions import Fraction
+from symengine import Rational
 
 import pytest
-import symengine as se
 
-from automata_inference.automata_factory import PGA, PGAFactory
+from automata_inference.automata.factory import PGAFactory, PGA, State, Transition
 
-# TODO were not using LPs anymore
 
 def test_probability_mass_one():
     """Computes the probability mass where the mass is equal to one."""
-    aut = PGAFactory.geometric("X", se.Rational(3,4), {"X", "1"})
+    aut = PGAFactory.geometric("X", Rational(3,4))
     assert aut.get_probability_mass() == 1
 
 
 def test_probability_mass_infeasible():
-    """LP is infeasible, e.g. 'probabiliy mass' diverges."""
+    """LES is infeasible, e.g. 'probabiliy mass' diverges."""
     # 'PGA' has to be construced by hand as the semantics preserves PGA property
     aut = PGA(
-        states={"q0"},
-        transition_matrix={"1": [(1, "q0", "q0")]},
-        initial={("1", "q0")},
-        final={("1", "q0")},
+        states={State(0,0)},
+        transition_matrix=[Transition(State(0,0), State(0,0), "X")],
+        initial={(1, State(0,0))},
+        final={(1, State(0,0))},
     )
     
     # LP is infeasible
@@ -30,56 +29,51 @@ def test_probability_mass_infeasible():
 # @pytest.mark.skip()
 def test_probability_mass_zero():
     """Probability mass is equal to zero."""
-    aut = PGA(
-        states={"q0"},
-        transition_matrix={"1": []},
-        initial={("1", "q0")},
-        final={},
-    )
+    aut = PGAFactory.zero()
     assert aut.get_probability_mass() == 0
 
 def test_probability_mass():
     """Probability mass is between zero and one."""
     aut = PGA(
-        states={"q0", "q1"},
-        transition_matrix={"1": [(se.Rational(1,2), "q0", "q1")]},
-        initial={(1, "q0")},
-        final={(1, "q1")}
+        states={State(0,0), State(0,1)},
+        transition_matrix=[Transition(State(0,0), State(0,1), weight=Rational(1,2))],
+        initial={(1, State(0,0))},
+        final={(1, State(0,1))}
     )
     assert aut.get_probability_mass() == Fraction(1,2)
     
     aut = PGA(
-        states={"q0", "q1"},
-        transition_matrix={"1": [(se.Rational(1,2), "q0", "q1")]},
-        initial={(se.Rational(3,8), "q0")},
-        final={(se.Rational(2,3), "q1")}
-    )
+            states={State(0,0), State(0,1)},
+            transition_matrix=[Transition(State(0,0), State(0,1), weight=Rational(1,2))],
+            initial={(Rational(3,8), State(0,0))},
+            final={(Rational(2,3), State(0,1))}
+        )
     
     assert aut.get_probability_mass() == Fraction(1,8)
     
     aut = PGA(
-        states={"q0", "q1"},
-        transition_matrix={"1": [(se.Rational(1,3), "q0", "q1")]},
-        initial={(1, "q0")},
-        final={(1, "q1")}
-    )
+            states={State(0,0), State(0,1)},
+            transition_matrix=[Transition(State(0,0), State(0,1), weight=Rational(1,3))],
+            initial={(2, State(0,0))},
+            final={(1, State(0,1))}
+        )
     
-    assert aut.get_probability_mass() == Fraction(1,3)
+    assert aut.get_probability_mass() == Fraction(2,3)
     
 
 def test_exact_results_for_symbolic_solution():
     aut = PGA(
-        states={"q0", "q1"},
-        transition_matrix={"1": [(se.Rational(1,3), "q0", "q1")]},
-        initial={(1, "q0")},
-        final={(1, "q1")}
+        states={State(0,0), State(0,1)},
+        transition_matrix=[Transition(State(0,0), State(0,1), weight=Rational(1,3))],
+        initial={(1, State(0,0))},
+        final={(1, State(0,1))}
     )
     
     aut2 = PGA(
-        states={"q0", "q1"},
-        transition_matrix={"1": [(se.Rational(3333333333333333,10000000000000000), "q0", "q1")]},
-        initial={(1, "q0")},
-        final={(1, "q1")}
-    )
+            states={State(0,0), State(0,1)},
+            transition_matrix=[Transition(State(0,0), State(0,1), weight=Rational(3333333333333333,10000000000000000))],
+            initial={(1, State(0,0))},
+            final={(1, State(0,1))}
+        )    
     assert aut.get_probability_mass() != aut2.get_probability_mass()
     
