@@ -1,143 +1,107 @@
 from symengine import Rational
 
-from automata_inference.automata_factory import PGA, PGAFactory
-from automata_inference.program_context import ProgramContext
-from tests.utils import compare_dicts_with_unordered_lists
+from automata_inference.automata.model import (
+    PGA,
+    State,
+    Transition,
+    ProductState,
+    current_state_namespace,
+)
+from tests.utils import AutomatonTestUtils
+
+create_pga = AutomatonTestUtils.create_pga
+assert_equal_pga = AutomatonTestUtils.assert_equal_pga
+
+
+def to_product_state(left: int, right: int, right_namespace: int = 0):
+    return ProductState(State(1, left), State(right_namespace, right))
 
 
 def test_decrement_no_change():
-    """No transition with indeterminate present."""
-    context = ProgramContext({"X", "Y", "1"})
-    aut = PGAFactory.geometric("Y", Rational(1, 2), context.indeterminates)
-    actual = aut.decrement("X", context)
+    """No transition with the requested indeterminate."""
+    aut = create_pga(0, 1, [(0, 0, "Y", Rational(1, 2))], {(1, 0)}, {(1, 0)})
     expected = PGA(
-        {"q_0_1"},
-        {"X": [], "Y": [(Rational(1, 2), "q_0_1", "q_0_1")], "1": []},
-        {(Rational(1, 1), "q_0_1")},
-        {(Rational(1, 2), "q_0_1")},
+        {State(0, 0), State(1, 0)},
+        {Transition(State(0, 0), State(0, 0), "Y", Rational(1, 2))},
+        {(1, State(0, 0)), (1, State(1, 0))},
+        {(1, State(0, 0))},
     )
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    assert_equal_pga(expected, aut.decrement("X"))
 
 
 def test_decrement_no_branching():
-    """'Singular' branch with indeterminate present."""
-    context = ProgramContext({"X", "1"})
-    aut = PGAFactory.geometric("X", Rational(1, 2), context.indeterminates)
-    actual = aut.decrement("X", context)
-    expected = PGA(
-        {"q_0", "(q_0,p_0)", "(q_0,p_1)"},
-        {
-            "X": [(Rational(1, 2), "(q_0,p_1)", "(q_0,p_1)")],
-            "1": [(Rational(1, 2), "(q_0,p_0)", "(q_0,p_1)")],
-        },
-        {(Rational(1, 1), "q_0"), (Rational(1, 1), "(q_0,p_0)")},
-        {(Rational(1, 2), "q_0"), (Rational(1, 2), "(q_0,p_1)")},
-    )
-
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
-
-
-def test_decrement_branching_no_constant():
-    """Branching automaton, but the coefficient of X^0 is 0."""
-    aut = PGA(
-        {"q_0", "q_1", "q_2"},
-        {"X": [(Rational(1, 2), "q_0", "q_1"), (Rational(1, 2), "q_0", "q_2")], "1": []},
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_1"), (Rational(1, 1), "q_2")},
-    )
+    aut = create_pga(1, 2, [(0, 1, "X", Rational(1, 2))], [(1, 0)], [(2, 1)])
+    right_namespace = current_state_namespace() + 1
+    # Shorthands for the states
+    # Note that the 'right' state has namespace '0' as we assume this to be dynamically assigned by the program
+    p00 = to_product_state(0, 0, right_namespace)
+    p11 = to_product_state(1, 1, right_namespace)
 
     expected = PGA(
-        {"(q_0,p_0)", "(q_1,p_1)", "(q_2,p_1)"},
-        {
-            "X": [],
-            "1": [(Rational(1, 2), "(q_0,p_0)", "(q_1,p_1)"), (Rational(1, 2), "(q_0,p_0)", "(q_2,p_1)")],
-            "Z": [],
-            "Y": [],
-        },
-        {(Rational(1, 1), "(q_0,p_0)")},
-        {(Rational(1, 1), "(q_1,p_1)"), (Rational(1, 1), "(q_2,p_1)")},
-    )
-    actual = aut.decrement("X", ProgramContext({"X", "1", "Z", "Y"}))
-
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
+        {p00, p11},
+        {Transition(p00, p11, weight=Rational(1, 2))},
+        {(1, p00)},
+        {(2, p11)},
     )
 
-    aut = PGA(
-        {"q_0", "q_1", "q_2", "q_3"},
-        {
-            "X": [(Rational(1, 2), "q_0", "q_1"), (Rational(1, 2), "q_0", "q_2"), (Rational(1, 1), "q_1", "q_3")],
-            "1": [],
-        },
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_3"), (Rational(1, 1), "q_2")},
+    assert_equal_pga(expected, aut.decrement("X"))
+
+
+def test_decrement_multiple_branches():
+    aut = create_pga(
+        1,
+        6,
+        [
+            (0, 1, "X", Rational(1, 2)),
+            (2, 3, "X", Rational(1, 4)),
+            (4, 5, None, Rational(2, 3)),
+        ],
+        [(1, 0), (1, 2), (1, 4)],
+        [(1, 1), (1, 3), (1, 5)],
     )
+
+    right_namespace = current_state_namespace() + 1
+
+    p00 = to_product_state(0, 0, right_namespace)
+    p11 = to_product_state(1, 1, right_namespace)
+    p20 = to_product_state(2, 0, right_namespace)
+    p31 = to_product_state(3, 1, right_namespace)
+    s4 = State(1, 4)
+    s5 = State(1, 5)
+
     expected = PGA(
-        {"(q_0,p_0)", "(q_1,p_1)", "(q_2,p_1)", "(q_3,p_1)"},
+        {p00, p11, p20, p31, s4, s5},
         {
-            "X": [(Rational(1, 1), "(q_1,p_1)", "(q_3,p_1)")],
-            "1": [(Rational(1, 2), "(q_0,p_0)", "(q_1,p_1)"), (Rational(1, 2), "(q_0,p_0)", "(q_2,p_1)")],
-            "Z": [],
-            "Y": [],
+            Transition(p00, p11, weight=Rational(1, 2)),
+            Transition(p20, p31, weight=Rational(1, 4)),
+            Transition(s4, s5, weight=Rational(2, 3)),
         },
-        {(Rational(1, 1), "(q_0,p_0)")},
-        {(Rational(1, 1), "(q_3,p_1)"), (Rational(1, 1), "(q_2,p_1)")},
+        {(1, p00), (1, p20), (1, s4)},
+        {(1, p11), (1, p31), (1, s5)},
     )
 
-    actual = aut.decrement("X", ProgramContext({"X", "1", "Z", "Y"}))
-
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    assert_equal_pga(expected, aut.decrement("X"))
 
 
-def test_decrement_branching_constant():
-    """Branching automaton, but the coefficient of X^0 is not 0."""
-    aut = PGA(
-        {"q_0", "q_1", "q_2"},
-        {"X": [(Rational(1, 2), "q_0", "q_1"), (Rational(1, 2), "q_0", "q_2")], "1": []},
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_1"), (Rational(1, 1), "q_2"), (Rational(1, 2), "q_0")},
+def test_decrement_self_loop():
+    aut = create_pga(
+        1, 1, [(0, 0, "Y", Rational(1, 2))], [(1, 0)], [(Rational(1, 2), 0)]
     )
+
+    right_namespace = current_state_namespace() + 1
+
+    p00 = to_product_state(0, 0, right_namespace)
+    p01 = to_product_state(0, 1, right_namespace)
+    s0 = State(1, 0)
+
     expected = PGA(
-        {"(q_0,p_0)", "(q_1,p_1)", "(q_2,p_1)", "q_0"},
+        {p00, p01, s0},
         {
-            "X": [],
-            "1": [(Rational(1, 2), "(q_0,p_0)", "(q_1,p_1)"), (Rational(1, 2), "(q_0,p_0)", "(q_2,p_1)")],
+            Transition(p01, p01, "Y", Rational(1, 2)),
+            Transition(p00, p01, weight=Rational(1, 2)),
         },
-        {(Rational(1, 1), "(q_0,p_0)"), (Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "(q_1,p_1)"), (Rational(1, 1), "(q_2,p_1)"), (Rational(1, 2), "q_0")},
+        {(1, p00), (1, s0)},
+        {(Rational(1, 2), p01), (Rational(1, 2), s0)},
     )
-    actual = aut.decrement("X", ProgramContext({"X", "1"}))
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+
+    assert_equal_pga(expected, aut.decrement("Y"))

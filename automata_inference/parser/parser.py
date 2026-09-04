@@ -1,94 +1,52 @@
 from functools import reduce
 
-from symengine import Rational
 from lark import Lark, Tree
+from symengine import Rational
 
-from automata_inference.program_statements import (
-    SkipStatement,
+from automata_inference.parser.ast.distributions import (
+    Bernoulli,
+    Dirac,
+    Distribution,
+    Geometric,
+    NegBinom,
+    Uniform,
+)
+from automata_inference.parser.ast.guards import (
+    And,
+    Equals,
+    Implies,
+    LessThan,
+    ModuloEquals,
+    Not,
+    Or,
+)
+from automata_inference.parser.ast.queries import (
+    MixedMoment,
+    PosteriorProbability,
+    Query,
+    UnivariateMoment,
+)
+from automata_inference.parser.ast.statements import (
     AssignStatement,
+    CoinflipStatement,
+    ConstantRhs,
+    DistributionRhs,
+    IfStatement,
+    IidRhs,
     IncrementStatement,
     MonusStatement,
-    CoinflipStatement,
-    IfStatement,
     ObserveStatement,
     Program,
-    Statement,
+    Rhs,
     SequentialCompositionStatement,
+    SkipStatement,
+    Statement,
+    VariableRhs,
 )
-from automata_inference.guards import LtGuard, ModGuard, EqGuard, LandGuard, NegGuard, Guard
-from automata_inference.distributions import (
-    Distribution,
-    DiracDistribution,
-    BernoulliDistribution,
-    GeometricDistribution,
-    NegBinomialDistribution,
-    UniformDistribution,
-)
-from automata_inference.query import Query, ProbabilityQuery, MomentQuery, MixedMomentQuery
+from automata_inference.parser.grammar import get_grammar
 
 # Heavily inspired by Philipp Schröers' work:
 # https://github.com/Philipp15b/probably
-
-GRAMMAR = r"""
-%ignore /#.*$/m
-%ignore /\/\/.*$/m
-%ignore WS
-%ignore ";"
-
-%import common.CNAME
-%import common.INT
-%import common.WS
-
-program: declarations statements query?
-
-declarations:    declaration*   -> declarations
-statements:      statement*     -> statements
-
-declaration:    "var" var       -> var
-
-statement:      "skip"                              -> skip
-        |       var ":=" rhs                        -> assignment
-        |       var "+=" rhs                        -> increment
-        |       var "--"                            -> monus
-        |       block "[" frac "]" block            -> probchoice
-        |       "if" par_block block ("else" block)?  -> if
-        |       "observe" par_block                 -> observe
-        |       "while" par_block block             -> while
-
-query:      "?Pr[" guard "]"            -> posterior_prob
-        |   "?E[" var "," INT "]"       -> moment
-        |   "?E[" var "," var "]"       -> mixed_moment
-
-block: "{" statement* "}"
-par_block: "(" guard ")"
-
-guard:  var "<" INT             -> lt
-    |   var "%" INT "="? INT    -> mod
-    |   var "=" INT             -> eq
-    |   var "<=" INT            -> leq
-    |   var ">=" INT            -> geq
-    |   var ">" INT             -> gt
-    |   var "!=" INT            -> neq
-    |   guard "->" guard        -> impl
-    |   guard "&&" guard        -> land
-    |   guard "||" guard        -> lor
-    |   "!" par_block           -> neg
-
-rhs:    INT                                     -> const
-    |   "iid" "(" distribution "," var  ")"     -> iid
-    |   distribution                            -> distribution
-    |   var                                     -> var
-
-distribution:   "Unif" "(" INT ")"                  -> uniform
-        |       "Geom" "(" frac")"                  -> geometric
-        |       "NegBinom" "(" INT "," frac ")"     -> negbinom
-        |       "Bern" "(" frac ")"                 -> bernoulli
-        |       "Dirac" "(" INT ")"                 -> dirac
-
-frac:   INT "/" INT     -> frac
-
-var: CNAME
-    """
 
 
 def parse(program_path: str) -> Program:
@@ -113,7 +71,7 @@ def parse_string(program: str) -> Program:
     Returns:
         Program: The parsed program.
     """
-    parser = Lark(GRAMMAR, start="program")
+    parser = Lark(get_grammar(), start="program")
     ast = parser.parse(program)
     return _parse_tree(ast)
 
@@ -122,18 +80,19 @@ def _parse_tree(tree: Tree) -> Program:
     declarations = _parse_declarations(tree.children[0])
     variables = set(declarations)
     statements = _parse_statements(tree.children[1], variables)
+    body = _statement_list_to_sequential_comp(statements) if statements else None
     if len(tree.children) > 2:
         query = _parse_query(tree.children[2], variables)
         return Program(
-            _statement_list_to_sequential_comp(statements) if statements else statements,
+            body,
             any(isinstance(st, ObserveStatement) for st in statements),
-            variables,
+            set(variables),
             query,
         )
     return Program(
-        _statement_list_to_sequential_comp(statements) if statements else statements,
+        body,
         any(isinstance(st, ObserveStatement) for st in statements),
-        variables,
+        set(variables),
     )
 
 
@@ -173,13 +132,13 @@ def _parse_statement(tree: Tree, variables: set[str]):
 
 def _parse_statement_assignment(tree: Tree, variables: set[str]):
     indeterminate = _parse_var(tree.children[0], variables)
-    rhs = _parse_rhs(tree.children[1], indeterminate, variables)
+    rhs = _parse_rhs(tree.children[1], variables)
     return AssignStatement(indeterminate, rhs)
 
 
 def _parse_statement_increment(tree: Tree, variables: set[str]):
     indeterminate = _parse_var(tree.children[0], variables)
-    rhs = _parse_rhs(tree.children[1], indeterminate, variables)
+    rhs = _parse_rhs(tree.children[1], variables)
     return IncrementStatement(indeterminate, rhs)
 
 
@@ -189,17 +148,25 @@ def _parse_statement_monus(tree: Tree, variables: set[str]):
 
 
 def _parse_statement_probchoice(tree: Tree, variables: set[str]) -> CoinflipStatement:
-    lhs = _statement_list_to_sequential_comp(_parse_statements(tree.children[0], variables))
+    lhs = _statement_list_to_sequential_comp(
+        _parse_statements(tree.children[0], variables)
+    )
     p = _parse_frac(tree.children[1])
-    rhs = _statement_list_to_sequential_comp(_parse_statements(tree.children[2], variables))
+    rhs = _statement_list_to_sequential_comp(
+        _parse_statements(tree.children[2], variables)
+    )
     return CoinflipStatement(lhs, p, rhs)
 
 
 def _parse_statement_if(tree: Tree, variables):
     guard = _parse_guard(tree.children[0].children[0], variables)
-    then_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[1], variables))
+    then_statement = _statement_list_to_sequential_comp(
+        _parse_statements(tree.children[1], variables)
+    )
     if len(tree.children) > 2:
-        else_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[2], variables))
+        else_statement = _statement_list_to_sequential_comp(
+            _parse_statements(tree.children[2], variables)
+        )
         return IfStatement(guard, then_statement, else_statement)
     return IfStatement(guard, then_statement)
 
@@ -215,19 +182,20 @@ def _parse_statement_while(tree: Tree, variables: set[str]):
 
 def _parse_frac(tree: Tree) -> Rational:
     if int(str(tree.children[1])) == 0:
-        raise ValueError("Division by 0")
+        raise ValueError("Division by 0.")
     return Rational(tree.children[0], tree.children[1])
 
 
-def _parse_rhs(tree: Tree, indeterminate: str, variables: set[str]):
+def _parse_rhs(tree: Tree, variables: set[str]) -> Rhs:
     if tree.data == "const":
-        return _parse_const(tree)
+        return ConstantRhs(_parse_const(tree))
     if tree.data == "iid":
-        return _parse_iid(tree, indeterminate, variables)
+        distribution, variable = _parse_iid(tree, variables)
+        return IidRhs(distribution, variable)
     if tree.data == "distribution":
-        return _parse_distribution(tree.children[0], indeterminate)
+        return DistributionRhs(_parse_distribution(tree.children[0]))
     if tree.data == "var":
-        return _parse_var(tree, variables)
+        return VariableRhs(_parse_var(tree.children[0], variables))
     raise ValueError(f"Unknown rhs, {tree.data}")
 
 
@@ -246,50 +214,52 @@ def _parse_int(tree: Tree) -> int:
     return int(str(tree))
 
 
-def _parse_iid(tree: Tree, indeterminate: str, variables: set[str]) -> tuple[Distribution, str]:
-    distribution = _parse_distribution(tree.children[0], indeterminate)
+def _parse_iid(
+    tree: Tree, variables: set[str]
+) -> tuple[Distribution, str]:
+    distribution = _parse_distribution(tree.children[0])
     indeterminate_rhs = _parse_var(tree.children[1], variables)
     return (distribution, indeterminate_rhs)
 
 
-def _parse_distribution(tree: Tree, indeterminate: str) -> Distribution:
+def _parse_distribution(tree: Tree) -> Distribution:
     if tree.data == "geometric":
-        return _parse_distribution_geometric(tree, indeterminate)
+        return _parse_distribution_geometric(tree)
     if tree.data == "uniform":
-        return _parse_distribution_uniform(tree, indeterminate)
+        return _parse_distribution_uniform(tree)
     if tree.data == "negbinom":
-        return _parse_distribution_negbinom(tree, indeterminate)
+        return _parse_distribution_negbinom(tree)
     if tree.data == "bernoulli":
-        return _parse_distribution_bernoulli(tree, indeterminate)
+        return _parse_distribution_bernoulli(tree)
     if tree.data == "dirac":
-        return _parse_distribution_dirac(tree, indeterminate)
+        return _parse_distribution_dirac(tree)
     raise ValueError(f"Unknown distribution, {tree.data}")
 
 
-def _parse_distribution_geometric(tree: Tree, indeterminate: str) -> GeometricDistribution:
+def _parse_distribution_geometric(tree: Tree) -> Geometric:
     p = _parse_frac(tree.children[0])
-    return GeometricDistribution(indeterminate, p)
+    return Geometric(p)
 
 
-def _parse_distribution_uniform(tree: Tree, indeterminate: str) -> UniformDistribution:
+def _parse_distribution_uniform(tree: Tree) -> Uniform:
     n = _parse_int(tree.children[0])
-    return UniformDistribution(indeterminate, n)
+    return Uniform(n)
 
 
-def _parse_distribution_negbinom(tree: Tree, indeterminate: str) -> NegBinomialDistribution:
+def _parse_distribution_negbinom(tree: Tree) -> NegBinom:
     n = _parse_int(tree.children[0])
     p = _parse_frac(tree.children[1])
-    return NegBinomialDistribution(indeterminate, n, p)
+    return NegBinom(n, p)
 
 
-def _parse_distribution_bernoulli(tree: Tree, indeterminate: str) -> BernoulliDistribution:
+def _parse_distribution_bernoulli(tree: Tree) -> Bernoulli:
     p = _parse_frac(tree.children[0])
-    return BernoulliDistribution(indeterminate, p)
+    return Bernoulli(p)
 
 
-def _parse_distribution_dirac(tree: Tree, indeterminate: str) -> DiracDistribution:
+def _parse_distribution_dirac(tree: Tree) -> Dirac:
     n = _parse_int(tree.children[0])
-    return DiracDistribution(indeterminate, n)
+    return Dirac(n)
 
 
 def _parse_guard(tree: Tree, variables: set[str]):
@@ -318,77 +288,79 @@ def _parse_guard(tree: Tree, variables: set[str]):
     raise ValueError(f"Unknown guard, {tree.data}")
 
 
-def _parse_guard_lt(tree: Tree, variables: set[str]) -> LtGuard:
+def _parse_guard_lt(tree: Tree, variables: set[str]) -> LessThan:
     indeterminate = _parse_var(tree.children[0], variables)
     n = _parse_int(tree.children[1])
-    return LtGuard(indeterminate, n)
+    return LessThan(indeterminate, n)
 
 
-def _parse_guard_mod(tree: Tree, variables: set[str]) -> ModGuard:
+def _parse_guard_mod(tree: Tree, variables: set[str]) -> ModuloEquals:
     indeterminate = _parse_var(tree.children[0], variables)
     modulus = _parse_int(tree.children[1])
     residue = _parse_int(tree.children[2])
-    return ModGuard(indeterminate, modulus, residue)
+    return ModuloEquals(indeterminate, modulus, residue)
 
 
-def _parse_guard_eq(tree: Tree, variables: set[str]) -> EqGuard:
+def _parse_guard_eq(tree: Tree, variables: set[str]) -> Equals:
     indeterminate = _parse_var(tree.children[0], variables)
     n = _parse_int(tree.children[1])
-    return EqGuard(indeterminate, n)
+    return Equals(indeterminate, n)
 
 
-def _parse_guard_leq(tree: Tree, variables: set[str]) -> Guard:
+def _parse_guard_leq(tree: Tree, variables: set[str]) -> LessThan:
     indeterminate = _parse_var(tree.children[0], variables)
     n = _parse_int(tree.children[1])
-    return LtGuard(indeterminate, n + 1)
+    return LessThan(indeterminate, n + 1)
 
 
-def _parse_guard_geq(tree: Tree, variables: set[str]) -> Guard:
+def _parse_guard_geq(tree: Tree, variables: set[str]) -> Not:
     indeterminate = _parse_var(tree.children[0], variables)
     n = _parse_int(tree.children[1])
-    return NegGuard(LtGuard(indeterminate, n))
+    return Not(LessThan(indeterminate, n))
 
 
-def _parse_guard_gt(tree: Tree, variables: set[str]) -> Guard:
+def _parse_guard_gt(tree: Tree, variables: set[str]) -> Not:
     indeterminate = _parse_var(tree.children[0], variables)
     n = _parse_int(tree.children[1])
-    return NegGuard(LtGuard(indeterminate, n + 1))
+    return Not(LessThan(indeterminate, n + 1))
 
 
-def _parse_guard_land(tree: Tree, variables: set[str]) -> LandGuard:
+def _parse_guard_land(tree: Tree, variables: set[str]) -> And:
     guard1 = _parse_guard(tree.children[0], variables)
     guard2 = _parse_guard(tree.children[1], variables)
-    return LandGuard(guard1, guard2)
+    return And(guard1, guard2)
 
 
-def _parse_guard_neq(tree: Tree, variables: set[str]) -> NegGuard:
+def _parse_guard_neq(tree: Tree, variables: set[str]) -> Not:
     indeterminate = _parse_var(tree.children[0], variables)
     n = _parse_int(tree.children[1])
-    return NegGuard(EqGuard(indeterminate, n))
+    return Not(Equals(indeterminate, n))
 
 
-def _parse_guard_lor(tree: Tree, variables: set[str]) -> NegGuard:
+def _parse_guard_lor(tree: Tree, variables: set[str]) -> Or:
     guard_1 = _parse_guard(tree.children[0], variables)
-    guard_2 = _parse_guard(tree.children[0], variables)
-    return NegGuard(LandGuard(NegGuard(guard_1), NegGuard(guard_2)))
+    guard_2 = _parse_guard(tree.children[1], variables)
+    return Or(guard_1, guard_2)
 
 
-def _parse_guard_impl(tree: Tree, variables: set[str]) -> NegGuard:
+def _parse_guard_impl(tree: Tree, variables: set[str]) -> Implies:
     guard_1 = _parse_guard(tree.children[0], variables)
-    guard_2 = _parse_guard(tree.children[0], variables)
-    return NegGuard(LandGuard(guard_1, NegGuard(guard_2)))
+    guard_2 = _parse_guard(tree.children[1], variables)
+    return Implies(guard_1, guard_2)
 
 
-def _parse_guard_neg(tree: Tree, variables: set[str]) -> NegGuard:
+def _parse_guard_neg(tree: Tree, variables: set[str]) -> Not:
     guard = _parse_guard(tree.children[0], variables)
-    return NegGuard(guard)
+    return Not(guard)
 
 
 def _statement_list_to_sequential_comp(statements: list[Statement]) -> Statement:
+    if not statements:
+        return SkipStatement()
     if len(statements) == 1:
         return statements[0]
     return reduce(
-        lambda rhs, lhs: SequentialCompositionStatement(lhs=lhs, rhs=rhs),
+        lambda right, left: SequentialCompositionStatement(left=left, right=right),
         reversed(statements[:-1]),
         statements[-1],
     )
@@ -409,16 +381,16 @@ def _parse_query(tree: Tree, variables: set[str]) -> Query:
 
 def _parse_query_posterior_prob(tree: Tree, variables: set[str]):
     guard = _parse_guard(tree, variables)
-    return ProbabilityQuery(guard)
+    return PosteriorProbability(guard)
 
 
 def _parse_query_moment(tree: Tree, variables: set[str]):
     indeterminate = _parse_var(tree.children[0], variables)
     moment = _parse_int(tree.children[1])
-    return MomentQuery(indeterminate, moment)
+    return UnivariateMoment(indeterminate, moment)
 
 
 def _parse_query_mixed_moment(tree: Tree, variables: set[str]):
     indeterminate1 = _parse_var(tree.children[0], variables)
     indeterminate2 = _parse_var(tree.children[1], variables)
-    return MixedMomentQuery(indeterminate1, indeterminate2)
+    return MixedMoment(indeterminate1, indeterminate2)

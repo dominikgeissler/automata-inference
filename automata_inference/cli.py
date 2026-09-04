@@ -1,10 +1,11 @@
-import time
-
-from argparse import ArgumentParser
 import sys
-from automata_inference.automata_factory import PGAFactory
+import time
+from argparse import ArgumentParser
+
+from automata_inference.automata.factory import PGAFactory
 from automata_inference.parser.parser import parse
-from automata_inference.visualizer import visualize
+from automata_inference.programs.handlers.statement_handler import StatementHandler
+from automata_inference.visualization.graphviz import visualize
 
 
 def main(program_path: str, visualize_posterior: bool):
@@ -22,25 +23,25 @@ def main(program_path: str, visualize_posterior: bool):
     print("----------------------------------")
     print()
 
-    input_pga = PGAFactory.one((program.variables | {"1"}))
+    input_pga = PGAFactory.one()
+    statement_handler = StatementHandler(program.variables)
     start = time.time()
-    out = program.apply_semantics(input_pga)
+    out = statement_handler.compile_program(program, input_pga)
     print()
     print("----------------------------------")
     print("-       Finished Analysis        -")
     print(f"- in {round(time.time() - start, 17)} seconds -")
     print("----------------------------------")
     print()
-
-    if program.query:
-        print(f"Output of '{program.query}': {program.evaluate_query(out)}")
     if visualize_posterior:
         visualize(out, view=True)
 
 
 def create_parser():
     """Creates and returns the parser of the CLI arguments."""
-    argument_parser = ArgumentParser(description="Anaylsis of discrete probabilistic programs.")
+    argument_parser = ArgumentParser(
+        description="Anaylsis of discrete probabilistic programs."
+    )
 
     argument_parser.add_argument("program_path", help="Path to the program file.")
 
