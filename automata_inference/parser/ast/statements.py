@@ -7,6 +7,7 @@ from automata_inference.parser.ast.guards import Guard
 from automata_inference.parser.ast.distributions import Distribution
 from automata_inference.parser.ast.queries import Query
 
+
 class Statement:
     """Base class for parsed statements."""
 

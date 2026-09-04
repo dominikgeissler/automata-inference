@@ -2,6 +2,7 @@ from graphviz import Digraph
 
 from automata_inference.automata.model import Automaton, PGA
 
+
 def visualize(aut: Automaton, out_path="aut", view=False):
     """Visualizes the given automaton.
 

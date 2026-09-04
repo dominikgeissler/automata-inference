@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from automata_inference.automata.model import DFA
 from automata_inference.automata.factory import DFAFactory
 
+
 class Guard(ABC):
     """Models Boolean guards."""
 
@@ -12,7 +13,7 @@ class Guard(ABC):
 
 
         Args:
-            indeterminates (Programindeterminates): The program 
+            indeterminates (Programindeterminates): The program
 
         Returns:
             DFA: The DFA representing the guard.
@@ -53,13 +54,17 @@ class ModGuard(Guard):
             modulus (int): The modulus of the comparison.
             residue (int): The residue of the operation.
         """
-        assert modulus > residue, f"Modulus has to be greater than residue, got: {modulus=}, {residue=}"
+        assert (
+            modulus > residue
+        ), f"Modulus has to be greater than residue, got: {modulus=}, {residue=}"
         self.indeterminate = indeterminate
         self.modulus = modulus
         self.residue = residue
 
     def to_dfa(self, indeterminates):
-        return DFAFactory.mod(self.indeterminate, self.modulus, self.residue, indeterminates)
+        return DFAFactory.mod(
+            self.indeterminate, self.modulus, self.residue, indeterminates
+        )
 
     def __str__(self):
         return f"{self.indeterminate} mod {self.modulus} = {self.residue}"
@@ -101,7 +106,11 @@ class LandGuard(Guard):
         self.guard2 = guard2
 
     def to_dfa(self, indeterminates):
-        return DFAFactory.land(self.guard1.to_dfa(indeterminates), self.guard2.to_dfa(indeterminates), indeterminates)
+        return DFAFactory.land(
+            self.guard1.to_dfa(indeterminates),
+            self.guard2.to_dfa(indeterminates),
+            indeterminates,
+        )
 
     def __str__(self):
         return f"({self.guard1}) && ({self.guard2})"

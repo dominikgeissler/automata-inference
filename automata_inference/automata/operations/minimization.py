@@ -1,5 +1,6 @@
 from automata_inference.automata.model import Automaton, PGA, DFA
 
+
 def minimize(aut: Automaton) -> Automaton:
     """Minimizes the given automaton by removing non-coaccessible states and merging redundant states.
 
@@ -25,13 +26,19 @@ def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
     Returns:
         Automaton: The automaton without unreachable / non-coaccessible states.
     """
-    is_pga = isinstance(aut, PGA)  # or any(isinstance(el, tuple) for el in aut.initial | aut.final)
+    is_pga = isinstance(
+        aut, PGA
+    )  # or any(isinstance(el, tuple) for el in aut.initial | aut.final)
     # Remove zero initial / final weights
     aut.initial = {el for el in aut.initial if el[0] != 0}
     aut.final = {el for el in aut.final if el[0] != 0}
 
     def get_state(possible_weighted_state):
-        return possible_weighted_state[1] if isinstance(possible_weighted_state, tuple) else possible_weighted_state
+        return (
+            possible_weighted_state[1]
+            if isinstance(possible_weighted_state, tuple)
+            else possible_weighted_state
+        )
 
     successors = {state: set() for state in aut.states}
     predecessors = {state: set() for state in aut.states}
@@ -63,13 +70,12 @@ def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
 
         return PGAFactory.zero() if is_pga else DFAFactory.false()  # type: ignore[return-value]
 
-    new_transition_matrix = []
     aut.states = keep
-    new_transition_matrix = [
+    new_transition_matrix = {
         transition
         for transition in aut.transition_matrix
         if transition.source in keep and transition.target in keep
-    ]
+    }
     aut.transition_matrix = new_transition_matrix
 
     if is_pga:

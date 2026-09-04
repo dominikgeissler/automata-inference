@@ -3,17 +3,29 @@ from collections import Counter
 
 from automata_inference.automata.model import PGA, State, Transition
 
-class AutomatonTestUtils():
-    
+
+class AutomatonTestUtils:
+
     @staticmethod
-    def create_pga(namespace: int, number_of_states: int, transitions: list[tuple[int, int, str | None, Rational]], initial: list[tuple[Rational, int]], final: list[tuple[Rational, int]]) -> PGA:
+    def create_pga(
+        namespace: int,
+        number_of_states: int,
+        transitions: list[tuple[int, int, str | None, Rational]],
+        initial: list[tuple[Rational, int]],
+        final: list[tuple[Rational, int]],
+    ) -> PGA:
         return PGA(
             {State(namespace, i) for i in range(number_of_states)},
-            [Transition(State(namespace, source), State(namespace, target), symbol, weight) for (source, target, symbol, weight) in transitions],
-            {(weight, State(namespace, state)) for (weight, state) in initial}, 
-            {(weight, State(namespace, state)) for (weight, state) in final}, 
+            {
+                Transition(
+                    State(namespace, source), State(namespace, target), symbol, weight
+                )
+                for (source, target, symbol, weight) in transitions
+            },
+            {(weight, State(namespace, state)) for (weight, state) in initial},
+            {(weight, State(namespace, state)) for (weight, state) in final},
         )
-        
+
     @staticmethod
     def assert_equal_pga(expected: PGA, actual: PGA):
         assert expected.states == actual.states, (

@@ -20,7 +20,7 @@ from automata_inference.parser.ast.statements import (
     SequentialCompositionStatement,
     SkipStatement,
     Statement,
-    VariableRhs    
+    VariableRhs,
 )
 
 from automata_inference.parser.ast.guards import (
@@ -31,7 +31,7 @@ from automata_inference.parser.ast.guards import (
     LessThan,
     ModuloEquals,
     Not,
-    Or
+    Or,
 )
 
 from automata_inference.parser.ast.distributions import (
@@ -40,20 +40,19 @@ from automata_inference.parser.ast.distributions import (
     Dirac,
     Geometric,
     NegBinom,
-    Uniform
+    Uniform,
 )
 
 from automata_inference.parser.ast.queries import (
     MixedMoment,
     PosteriorProbability,
     Query,
-    UnivariateMoment
+    UnivariateMoment,
 )
-
-
 
 # Heavily inspired by Philipp Schröers' work:
 # https://github.com/Philipp15b/probably
+
 
 def parse(program_path: str) -> Program:
     """Parses a program from a file.
@@ -143,7 +142,6 @@ def _parse_statement_assignment(tree: Tree, variables: set[str]):
 
 
 def _parse_statement_increment(tree: Tree, variables: set[str]):
-    print(f"INCREMENT {tree}")
     indeterminate = _parse_var(tree.children[0], variables)
     rhs = _parse_rhs(tree.children[1], indeterminate, variables)
     return IncrementStatement(indeterminate, rhs)
@@ -155,17 +153,25 @@ def _parse_statement_monus(tree: Tree, variables: set[str]):
 
 
 def _parse_statement_probchoice(tree: Tree, variables: set[str]) -> CoinflipStatement:
-    lhs = _statement_list_to_sequential_comp(_parse_statements(tree.children[0], variables))
+    lhs = _statement_list_to_sequential_comp(
+        _parse_statements(tree.children[0], variables)
+    )
     p = _parse_frac(tree.children[1])
-    rhs = _statement_list_to_sequential_comp(_parse_statements(tree.children[2], variables))
+    rhs = _statement_list_to_sequential_comp(
+        _parse_statements(tree.children[2], variables)
+    )
     return CoinflipStatement(lhs, p, rhs)
 
 
 def _parse_statement_if(tree: Tree, variables):
     guard = _parse_guard(tree.children[0].children[0], variables)
-    then_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[1], variables))
+    then_statement = _statement_list_to_sequential_comp(
+        _parse_statements(tree.children[1], variables)
+    )
     if len(tree.children) > 2:
-        else_statement = _statement_list_to_sequential_comp(_parse_statements(tree.children[2], variables))
+        else_statement = _statement_list_to_sequential_comp(
+            _parse_statements(tree.children[2], variables)
+        )
         return IfStatement(guard, then_statement, else_statement)
     return IfStatement(guard, then_statement)
 
@@ -186,7 +192,6 @@ def _parse_frac(tree: Tree) -> Rational:
 
 
 def _parse_rhs(tree: Tree, indeterminate: str, variables: set[str]) -> Rhs:
-    print(tree)
     if tree.data == "const":
         return ConstantRhs(_parse_const(tree))
     if tree.data == "iid":
@@ -195,12 +200,11 @@ def _parse_rhs(tree: Tree, indeterminate: str, variables: set[str]) -> Rhs:
     if tree.data == "distribution":
         return DistributionRhs(_parse_distribution(tree.children[0], indeterminate))
     if tree.data == "var":
-        return VariableRhs(_parse_var(tree, variables))
+        return VariableRhs(_parse_var(tree.children[0], variables))
     raise ValueError(f"Unknown rhs, {tree.data}")
 
 
 def _parse_var(tree: Tree, variables: set[str], check_variables: bool = True) -> str:
-    print(tree)
     indeterminate = str(tree.children[0])
     if indeterminate not in variables and check_variables:
         raise ValueError(f"Variable {indeterminate} not defined.")
@@ -215,7 +219,9 @@ def _parse_int(tree: Tree) -> int:
     return int(str(tree))
 
 
-def _parse_iid(tree: Tree, indeterminate: str, variables: set[str]) -> tuple[Distribution, str]:
+def _parse_iid(
+    tree: Tree, indeterminate: str, variables: set[str]
+) -> tuple[Distribution, str]:
     distribution = _parse_distribution(tree.children[0], indeterminate)
     indeterminate_rhs = _parse_var(tree.children[1], variables)
     return (distribution, indeterminate_rhs)

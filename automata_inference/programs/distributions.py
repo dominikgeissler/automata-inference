@@ -50,7 +50,9 @@ class NegBinomialDistribution(Distribution):
         self.p = p
 
     def to_pga(self, context) -> PGA:
-        return PGAFactory.neg_binomial(self.indeterminate, self.n, self.p, context.indeterminates)
+        return PGAFactory.neg_binomial(
+            self.indeterminate, self.n, self.p, context.indeterminates
+        )
 
     def __str__(self):
         return f"NegBinom({self.n}, {self.p})"

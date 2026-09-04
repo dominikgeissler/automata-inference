@@ -1,4 +1,12 @@
-from automata_inference.automata.model import PGA, DFA, new_state_namespace, State, Transition, ProductState, StateLike
+from automata_inference.automata.model import (
+    PGA,
+    DFA,
+    new_state_namespace,
+    State,
+    Transition,
+    ProductState,
+    StateLike,
+)
 from symengine import Rational
 
 
@@ -17,9 +25,8 @@ class PGAFactory:
         """
         namespace = new_state_namespace()
         return PGA(
-            {State(namespace, 0)}, 
-            [], 
-            {(Rational(1,1), State(namespace, 0))}, set())
+            {State(namespace, 0)}, set(), {(Rational(1, 1), State(namespace, 0))}, set()
+        )
 
     @classmethod
     def one(cls) -> PGA:
@@ -32,7 +39,12 @@ class PGAFactory:
             PGA: The PGA encoding the one distribution,
         """
         namespace = new_state_namespace()
-        return PGA({State(namespace, 0)}, [], {(Rational(1, 1), State(namespace, 0))}, {(Rational(1, 1), State(namespace, 0))})
+        return PGA(
+            {State(namespace, 0)},
+            set(),
+            {(Rational(1, 1), State(namespace, 0))},
+            {(Rational(1, 1), State(namespace, 0))},
+        )
 
     # --- Distributions ---
     @classmethod
@@ -51,7 +63,7 @@ class PGAFactory:
         s = State(namespace, 0)
         return PGA(
             {s},
-            [Transition(s, s, indeterminate, 1 - p)],
+            {Transition(s, s, indeterminate, 1 - p)},
             {(Rational(1, 1), s)},
             {(p, s)},
         )
@@ -71,7 +83,10 @@ class PGAFactory:
         namespace = new_state_namespace()
         return PGA(
             {State(namespace, i) for i in range(n + 1)},
-            [Transition(State(namespace, i), State(namespace, i + 1), indeterminate) for i in range(n)],
+            {
+                Transition(State(namespace, i), State(namespace, i + 1), indeterminate)
+                for i in range(n)
+            },
             {(Rational(1, 1), State(namespace, 0))},
             {(Rational(1, 1), State(namespace, n))},
         )
@@ -90,8 +105,11 @@ class PGAFactory:
         """
         namespace = new_state_namespace()
         return PGA(
-            {State(namespace, i)for i in range(n)},
-            [Transition(State(namespace, i), State(namespace, i + 1), indeterminate) for i in range(n - 1)],
+            {State(namespace, i) for i in range(n)},
+            {
+                Transition(State(namespace, i), State(namespace, i + 1), indeterminate)
+                for i in range(n - 1)
+            },
             {(Rational(1, 1), State(namespace, 0))},
             {(Rational(1, n), State(namespace, i)) for i in range(n)},
         )
@@ -111,7 +129,7 @@ class PGAFactory:
         namespace = new_state_namespace()
         return PGA(
             {State(namespace, 0), State(namespace, 1)},
-            [Transition(State(namespace, 0), State(namespace, 1), indeterminate, p)],
+            {Transition(State(namespace, 0), State(namespace, 1), indeterminate, p)},
             {(Rational(1, 1), State(namespace, 0))},
             {(1 - p, State(namespace, 0)), (Rational(1, 1), State(namespace, 1))},
         )
@@ -135,9 +153,11 @@ class PGAFactory:
             aut = aut.concat(PGAFactory.geometric(indeterminate, p))
         return aut
 
-# FIXME 
+
+# FIXME
 #   here i actually need all indeterminates to introduce the self-loops
 #   i could also handle this in the filter-method
+
 
 class DFAFactory:
     """Constructs guard DFAs."""
@@ -172,12 +192,20 @@ class DFAFactory:
         states = {State(namespace, i) for i in range(val + 1)}
         initial = {State(namespace, 0)}
         final = {State(namespace, i) for i in range(val)}
-        transition_matrix = [Transition(State(namespace, i), State(namespace, i+1), indeterminate) for i in range(val)] + \
-            [Transition(State(namespace, val), State(namespace, val), indeterminate)] + _reflexive_closure(indeterminates - {indeterminate}, states)
+        transition_matrix = (
+            {
+                Transition(State(namespace, i), State(namespace, i + 1), indeterminate)
+                for i in range(val)
+            }
+            | {Transition(State(namespace, val), State(namespace, val), indeterminate)}
+            | _reflexive_closure(indeterminates - {indeterminate}, states)
+        )
         return DFA(states, transition_matrix, initial, final)
 
     @classmethod
-    def mod(cls, indeterminate: str, modulus: int, residue: int, indeterminates: set[str]) -> DFA:
+    def mod(
+        cls, indeterminate: str, modulus: int, residue: int, indeterminates: set[str]
+    ) -> DFA:
         """The DFA encoding the modulus guard `indeterminate` mod `modulus` = `residue`. `modulus` has to be greater
         than `residue`.
 
@@ -195,7 +223,18 @@ class DFAFactory:
         states = {State(namespace, i) for i in range(modulus)}
         initial = {State(namespace, 0)}
         final = {State(namespace, residue)}
-        transition_matrix = [Transition(State(namespace, i), State(namespace, i+1), indeterminate) for i in range(modulus - 1)] + [Transition(State(namespace, modulus - 1), State(namespace, 0), indeterminate)] + _reflexive_closure(indeterminates - {indeterminate}, states)
+        transition_matrix = (
+            {
+                Transition(State(namespace, i), State(namespace, i + 1), indeterminate)
+                for i in range(modulus - 1)
+            }
+            | {
+                Transition(
+                    State(namespace, modulus - 1), State(namespace, 0), indeterminate
+                )
+            }
+            | _reflexive_closure(indeterminates - {indeterminate}, states)
+        )
         return DFA(states, transition_matrix, initial, final)
 
     # -------- Syntactic Sugar --------------
@@ -216,11 +255,18 @@ class DFAFactory:
         states = {State(namespace, i) for i in range(val + 2)}
         initial = {State(namespace, 0)}
         final = {State(namespace, val)}
-        transition_matrix = [
-            Transition(State(namespace, i), State(namespace, i + 1), indeterminate) for i in range(val + 1)
-        ] + [
-            Transition(State(namespace, val + 1), State(namespace, val + 1), indeterminate)
-        ] + _reflexive_closure(indeterminates - {indeterminate}, states)
+        transition_matrix = (
+            {
+                Transition(State(namespace, i), State(namespace, i + 1), indeterminate)
+                for i in range(val + 1)
+            }
+            | {
+                Transition(
+                    State(namespace, val + 1), State(namespace, val + 1), indeterminate
+                )
+            }
+            | _reflexive_closure(indeterminates - {indeterminate}, states)
+        )
         return DFA(states, transition_matrix, initial, final)
 
     @classmethod
@@ -233,7 +279,9 @@ class DFAFactory:
         Returns:
             DFA: The complement of the DFA.
         """
-        return DFA(dfa.states, dfa.transition_matrix, dfa.initial, dfa.states - dfa.final)
+        return DFA(
+            dfa.states, dfa.transition_matrix, dfa.initial, dfa.states - dfa.final
+        )
 
     @classmethod
     def land(cls, dfa1: DFA, dfa2: DFA) -> DFA:
@@ -247,16 +295,38 @@ class DFAFactory:
         Returns:
             DFA: The resulting intersection DFA.
         """
-        states = {ProductState(state1,state2) for state1 in dfa1.states for state2 in dfa2.states}
-        initial = {ProductState(state1,state2) for state1 in dfa1.initial for state2 in dfa2.initial}
-        final = {ProductState(state1,state2) for state1 in dfa1.final for state2 in dfa2.final}
-        transition_matrix = []
+        states = {
+            ProductState(state1, state2)
+            for state1 in dfa1.states
+            for state2 in dfa2.states
+        }
+        initial = {
+            ProductState(state1, state2)
+            for state1 in dfa1.initial
+            for state2 in dfa2.initial
+        }
+        final = {
+            ProductState(state1, state2)
+            for state1 in dfa1.final
+            for state2 in dfa2.final
+        }
+        transition_matrix = {}
         for indeterminate in dfa1.get_symbols().intersection(dfa2.get_symbols()):
-            transition_matrix.extend([Transition(ProductState(transition1.source, transition2.source), ProductState(transition1.target, transition2.target), indeterminate) for transition1 in dfa1.get_transitions_for_symbol(indeterminate) for transition2 in dfa2.get_transitions_for_symbol(indeterminate)])
+            transition_matrix = transition_matrix | {
+                Transition(
+                    ProductState(transition1.source, transition2.source),
+                    ProductState(transition1.target, transition2.target),
+                    indeterminate,
+                )
+                for transition1 in dfa1.get_transitions_for_symbol(indeterminate)
+                for transition2 in dfa2.get_transitions_for_symbol(indeterminate)
+            }
         return DFA(states, transition_matrix, initial, final)
-    
+
 
 def _reflexive_closure(indeterminates: set[str], states: set[StateLike]):
-    return [
-        Transition(state, state, symbol) for state in states for symbol in indeterminates
-    ]
+    return {
+        Transition(state, state, symbol)
+        for state in states
+        for symbol in indeterminates
+    }

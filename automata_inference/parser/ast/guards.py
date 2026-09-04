@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
+
 class Guard:
-     """Base class for guards."""
+    """Base class for guards."""
+
 
 @dataclass(frozen=True)
 class LessThan(Guard):
