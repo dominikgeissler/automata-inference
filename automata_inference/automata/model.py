@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from symengine import Matrix, Rational, eye
-from itertools import product
 from abc import ABC
+from dataclasses import dataclass
 from fractions import Fraction
+from itertools import product
+
+from symengine import Matrix, Rational, eye
 
 # Ensures that automata have disjoint state sets
 _namespace_id = -1
@@ -104,22 +105,13 @@ class Automaton(ABC):
             + f"Initial: {self.initial}, Final: {self.final}"
         )
 
-    def __eq__(self, value):
-        if not isinstance(value, Automaton):
-            return False
-        return (
-            self.states == value.states
-            and self.transition_matrix == value.transition_matrix
-            and self.initial == value.initial
-            and self.final == value.final
-        )
-
     def get_transitions(self, source: StateLike, target: StateLike, symbol: str | None = None) -> set[Transition]:
         """Returns the transitions between two specified states.
 
         Args:
             source (State): The source state.
             target (State): The target state.
+            symbol (str | None, optional): The symbol for which to return transitions (or None, if constant transitions are needed). Defaults to None.
 
         Returns:
             set[Transition]: The list of transitions between the specified states.
@@ -154,8 +146,7 @@ class Automaton(ABC):
 
 @dataclass
 class DFA(Automaton):
-    """
-    A DFA (deterministic finite automaton). Instantiation of Automaton.
+    """A DFA (deterministic finite automaton). Instantiation of Automaton.
 
     Args:
         states (set[State]): The set of states.
@@ -226,7 +217,7 @@ class PGA(Automaton):
         )
 
     def substitute(self, indeterminate: str, value: int) -> PGA:
-        """Substitutes a given indeterminate by some value in {0,1}
+        """Substitutes a given indeterminate by some value in {0,1}.
 
         Args:
             indeterminate (str): The indeterminate to be substituted
@@ -235,7 +226,6 @@ class PGA(Automaton):
         Returns:
             PGA: The substitution PGA A[X/i].
         """
-
         # Collect all transitions that need to be changed
         changed_transitions = self.get_transitions_for_symbol(indeterminate)
 
@@ -361,7 +351,6 @@ class PGA(Automaton):
         Returns:
             PGA: The resulting decrement automaton.
         """
-
         from automata_inference.automata.factory import DFAFactory
 
         # Filter the automaton to only contain paths that should be decremented

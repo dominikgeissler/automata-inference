@@ -11,9 +11,23 @@ from automata_inference.parser.ast.distributions import (
 
 
 class DistributionHandler:
+    """Handles the compilation of parsed distributions into PGA representations."""
+    
 
     @staticmethod
     def compile(distribution: Distribution, indeterminate: str) -> PGA:
+        """Handles the compilation of parsed distributions into PGA representations.
+
+        Args:
+            distribution (Distribution): The parsed distribution to be compiled. 
+            indeterminate (str): The indeterminate associated with the distribution.
+            
+        Raises:
+                ValueError: If the distribution type is unsupported.
+        
+        Returns:
+                PGA: The PGA representation of the distribution.
+        """
         if isinstance(distribution, Dirac):
             return PGAFactory.dirac(indeterminate, distribution.n)
         if isinstance(distribution, Geometric):

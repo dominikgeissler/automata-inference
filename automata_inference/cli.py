@@ -1,7 +1,7 @@
-import time
-
-from argparse import ArgumentParser
 import sys
+import time
+from argparse import ArgumentParser
+
 from automata_inference.automata.factory import PGAFactory
 from automata_inference.parser.parser import parse
 from automata_inference.programs.handlers.statement_handler import StatementHandler

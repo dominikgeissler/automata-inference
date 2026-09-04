@@ -14,9 +14,19 @@ from automata_inference.programs.handlers.guard_handler import GuardHandler
 
 
 class QueryHandler:
+    """Handles the computation of queries."""
 
     @staticmethod
     def evaluate_query(query: Query, pga: PGA) -> Rational:
+        """Evaluates a query on a given PGA.
+        
+        Args:
+            query (Query): The query to evaluate.
+            pga (PGA): The PGA on which to evaluate the query.
+
+        Returns:
+            Rational: The result of the query evaluation.
+        """
         if isinstance(query, PosteriorProbability):
             symbols: set[str] = {x for x in pga.get_symbols() if x is not None}
             guard_handler = GuardHandler(symbols)

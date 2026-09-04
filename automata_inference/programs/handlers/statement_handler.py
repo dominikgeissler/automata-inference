@@ -33,11 +33,26 @@ evaluate_query = QueryHandler.evaluate_query
 
 
 class StatementHandler:
+    """Handles the compilation of parsed statements into automaton transformations."""
     def __init__(self, indeterminates: set[str]):
+        """Creates a new StatementHandler instance.
+
+        Args:
+            indeterminates (set[str]): The set of indeterminates within the program.
+        """
         self.indeterminates = indeterminates
         self.guard_handler = GuardHandler(indeterminates)
 
     def compile_program(self, program: Program, pga: PGA) -> PGA:
+        """Applies the semantics of a given program to an input PGA. Also computes the result of any query present in the program.
+
+        Args:
+            program (Program): The parsed program to be compiled.
+            pga (PGA): The input PGA to which the program semantics will be applied.
+
+        Returns:
+            PGA: The resulting PGA after applying the program semantics (and normalization, if an observe-statement has been used).
+        """
         res = pga
         if program.body:
             res = self._compile(program.body, pga)

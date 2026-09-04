@@ -1,6 +1,6 @@
-from automata_inference.automata.model import Automaton, PGA, DFA, StateLike
-
 from typing import TypeVar
+
+from automata_inference.automata.model import PGA, Automaton, StateLike
 
 A = TypeVar("A", bound=Automaton)
 

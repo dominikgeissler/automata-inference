@@ -13,11 +13,28 @@ from automata_inference.parser.ast.guards import (
 
 
 class GuardHandler:
+    """Transforms a parsed guard into a DFA."""
 
     def __init__(self, indeterminates: set[str]):
+        """Creates a new GuardHandler instance.
+
+        Args:
+            indeterminates (set[str]): The set of indeterminates within the program.
+        """
         self.indeterminates = indeterminates
 
     def compile(self, guard: Guard) -> DFA:
+        """Transforms a guard into its DFA represntation.
+
+        Args:
+            guard (Guard): The guard to transform into a DFA.
+
+        Raises:
+            ValueError: If the guard type is unsupported.
+
+        Returns:
+            DFA: The DFA representation of the guard.
+        """
         if isinstance(guard, LessThan):
             return DFAFactory.lt(guard.variable, guard.value, self.indeterminates)
         if isinstance(guard, ModuloEquals):

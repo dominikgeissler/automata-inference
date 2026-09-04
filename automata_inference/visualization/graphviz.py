@@ -1,6 +1,6 @@
 from graphviz import Digraph
 
-from automata_inference.automata.model import Automaton, PGA, StateLike
+from automata_inference.automata.model import PGA, Automaton, StateLike
 
 
 def visualize(aut: Automaton, out_path="aut", view=False):
@@ -11,7 +11,6 @@ def visualize(aut: Automaton, out_path="aut", view=False):
         out_path (str, optional): The path the visualization should be saved at. Defaults to "aut".
         view (bool, optional): Whether the file should be opened automatically. Defaults to True.
     """
-
     dot = Digraph(comment="Automaton visualization")
 
     def node_id(state):

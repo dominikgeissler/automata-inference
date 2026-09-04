@@ -139,13 +139,13 @@ class PGAFactory:
     def neg_binomial(cls, indeterminate: str, n: int, p: Rational) -> PGA:
         """Returns the PGA encoding the negative binomial distribution with indeterminate `indeterminate` and
         parameter `n` and `p`.
-
+        
         Args:
             indeterminate (str): The indeterminate.
             n (int): The parameter (natural number).
             p (Rational): The parameter (probability).
             indeterminates (set[str]): The set of indeterminates.
-
+            
         Returns:
             PGA: The PGA encoding the negative binomial distribution.
         """
@@ -209,7 +209,7 @@ class DFAFactory:
     ) -> DFA:
         """The DFA encoding the modulus guard `indeterminate` mod `modulus` = `residue`. `modulus` has to be greater
         than `residue`.
-
+        
         Args:
             indeterminate (str): The indeterminate.
             modulus (int): The modulus.
