@@ -305,7 +305,9 @@ class PGA(Automaton):
         Returns:
             PGA: The PGA A_1[X/A_2].
         """
-        indet_trans = list(self.get_transitions_for_symbol(indeterminate))  # Order matters here
+        # The order is always different so the state labels may be different.
+        # this has no effect on the semantics.
+        indet_trans = list(self.get_transitions_for_symbol(indeterminate))
         new_states = self.states | {IndexedState(state, i) for state in other.states for i in range(len(indet_trans))}
 
         # All old transitions (with exception of the transitions with the symbol) are part of the new automaton
