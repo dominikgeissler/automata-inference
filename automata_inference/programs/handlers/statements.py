@@ -16,12 +16,12 @@ class Statement(ABC):
     """Represents a program statement."""
 
     @abstractmethod
-    def apply_semantics(self, pga: PGA, context: ProgramContext) -> PGA:
+    def apply_semantics(self, pga: PGA) -> PGA:
         """Computes the semantics of the program statement.
 
         Args:
             pga (PGA): The input PGA.
-            context (ProgramContext): The program context.
+             (ProgramContext): The program .
 
         Returns:
             PGA: The result of the semantics.
@@ -35,7 +35,7 @@ class SkipStatement(Statement):
     def __init__(self):
         pass
 
-    def apply_semantics(self, pga, context) -> PGA:
+    def apply_semantics(self, pga) -> PGA:
         return pga
 
     def __str__(self):
@@ -57,9 +57,9 @@ class AssignStatement(Statement):
         self.indeterminate = indeterminate
         self.rhs = rhs
 
-    def apply_semantics(self, pga, context):
+    def apply_semantics(self, pga):
         return IncrementStatement(self.indeterminate, self.rhs).apply_semantics(
-            pga.substitute(self.indeterminate, 1, context), context
+            pga.substitute(self.indeterminate, 1)
         )
 
     def __str__(self):
@@ -83,13 +83,13 @@ class IncrementStatement(Statement):
         self.indeterminate = indeterminate
         self.rhs = rhs
 
-    def apply_semantics(self, pga, context):
+    def apply_semantics(self, pga):
         if isinstance(self.rhs, Distribution):
             # Increment by distribution
-            return pga.concat(self.rhs.to_pga(context))
+            return pga.concat(self.rhs.to_pga())
         if isinstance(self.rhs, int):
             # Increment by constant
-            return pga.concat(DiracDistribution(self.indeterminate, self.rhs).to_pga(context))
+            return pga.concat(DiracDistribution(self.indeterminate, self.rhs).to_pga())
         # iid or increment variable
         if isinstance(self.rhs, str):
             indet_rhs = self.rhs
@@ -97,7 +97,7 @@ class IncrementStatement(Statement):
         else:
             distr, indet_rhs = self.rhs
         return pga.transition_substitution(
-            indet_rhs, PGAFactory.dirac(indet_rhs, 1, context.indeterminates).concat(distr.to_pga(context))
+            indet_rhs, PGAFactory.dirac(indet_rhs, 1).concat(distr.to_pga())
         )
 
     def __str__(self):
@@ -122,10 +122,10 @@ class CoinflipStatement(Statement):
         self.p = p
         self.rhs = rhs
 
-    def apply_semantics(self, pga, context) -> PGA:
+    def apply_semantics(self, pga) -> PGA:
         print(f"Calculating {str(self)}...")
-        return self.lhs.apply_semantics(pga, context).weighted_union(
-            self.rhs.apply_semantics(pga, context), self.p, 1 - self.p
+        return self.lhs.apply_semantics(pga).weighted_union(
+            self.rhs.apply_semantics(pga), self.p, 1 - self.p
         )
 
     def __str__(self):
@@ -147,16 +147,16 @@ class IfStatement(Statement):
         self.then_statement = then_statement
         self.else_statement = else_statement
 
-    def apply_semantics(self, pga, context) -> PGA:
+    def apply_semantics(self, pga) -> PGA:
         print(f"Calculating {str(self)}...")
-        guard_dfa = self.guard.to_dfa(context)
+        guard_dfa = self.guard.to_dfa()
         neg_guard_dfa = DFAFactory.neg(guard_dfa)
         if self.else_statement:
-            return self.then_statement.apply_semantics(pga.filter(guard_dfa, context), context).weighted_union(
-                self.else_statement.apply_semantics(pga.filter(neg_guard_dfa, context), context), 1, 1
+            return self.then_statement.apply_semantics(pga.filter(guard_dfa)).weighted_union(
+                self.else_statement.apply_semantics(pga.filter(neg_guard_dfa)), 1, 1
             )
-        return self.then_statement.apply_semantics(pga.filter(guard_dfa, context), context).weighted_union(
-            pga.filter(neg_guard_dfa, context), 1, 1
+        return self.then_statement.apply_semantics(pga.filter(guard_dfa)).weighted_union(
+            pga.filter(neg_guard_dfa), 1, 1
         )
 
     def __str__(self):
@@ -178,8 +178,8 @@ class MonusStatement(Statement):
         """
         self.indeterminate = indeterminate
 
-    def apply_semantics(self, pga, context) -> PGA:
-        return pga.decrement(self.indeterminate, context)
+    def apply_semantics(self, pga) -> PGA:
+        return pga.decrement(self.indeterminate)
 
     def __str__(self):
         return f"{self.indeterminate}--"
@@ -196,9 +196,9 @@ class ObserveStatement(Statement):
         """
         self.guard = guard
 
-    def apply_semantics(self, pga, context) -> PGA:
+    def apply_semantics(self, pga) -> PGA:
         print(f"Calculating {str(self)}...")
-        return pga.filter(self.guard.to_dfa(context), context)
+        return pga.filter(self.guard.to_dfa())
 
     def __str__(self):
         return f"observe({self.guard})"
@@ -217,9 +217,9 @@ class SequentialCompositionStatement(Statement):
         self.lhs = lhs
         self.rhs = rhs
 
-    def apply_semantics(self, pga, context) -> PGA:
+    def apply_semantics(self, pga) -> PGA:
         print(f"Calculating {str(self)}...")
-        return self.rhs.apply_semantics(self.lhs.apply_semantics(pga, context), context)
+        return self.rhs.apply_semantics(self.lhs.apply_semantics(pga))
 
     def __str__(self):
         return str(self.lhs) + ";" + str(self.rhs)

@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from symengine import Matrix, Rational, eye
-from itertools import count, product
+from itertools import product
 from abc import ABC
 from fractions import Fraction
 
-_namespace_ids = count()
+# Ensures that automata have disjoint state sets
+_namespace_id = -1
 
 @dataclass(frozen=True)
 class State:
@@ -24,7 +25,13 @@ class State:
 
 def new_state_namespace() -> int:
     """Generates a new namespace for states."""
-    return next(_namespace_ids)
+    global _namespace_id
+    _namespace_id += 1
+    return _namespace_id
+
+def current_state_namespace() -> int:
+    """Returns the current namespace. Used for testing."""
+    return _namespace_id
 
 @dataclass(frozen=True)
 class ProductState:
@@ -317,7 +324,7 @@ class PGA(Automaton):
         from automata_inference.automata.factory import DFAFactory
 
         # Filter the automaton to only contain paths that should be decremented
-        guard_dfa = DFAFactory.neg(DFAFactory.lt(indeterminate, 1))
+        guard_dfa = DFAFactory.neg(DFAFactory.lt(indeterminate, 1, self.get_symbols()))
         filtered = self.filter(guard_dfa)
         
         # Paths that do not have any <indeterminate>-transitions
@@ -342,8 +349,10 @@ class PGA(Automaton):
         
         # Create the updated filtered automaton
         updated_filtered = PGA(filtered.states, new_transition_matrix, filtered.initial, filtered.final)
-        
-        return updated_filtered.weighted_union(subs_zero, 1, 1)
+              
+        # Recombine the updated automaton with the part that only contains paths without any <indeterminate>-transition
+        # Simple 'minimization': If subs_zero has no final states it is likely to be the 'zero'-PGA so we can ignore it
+        return updated_filtered.weighted_union(subs_zero, 1, 1) if len(subs_zero.final) != 0 else updated_filtered
     
     def _construct_marginalized_transition_matrix(self, states: list[StateLike]):
             arr = [[0 for _ in range(len(states))] for _ in range(len(states))]

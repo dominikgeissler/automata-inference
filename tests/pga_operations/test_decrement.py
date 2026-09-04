@@ -1,105 +1,79 @@
-# from symengine import Rational
+from symengine import Rational
 
-# from automata_inference.automata.model import PGA, State, Transition
-# from tests.utils import AutomatonTestUtils
+from automata_inference.automata.model import PGA, State, Transition, ProductState, current_state_namespace
+from tests.utils import AutomatonTestUtils
 
-# make_pga = AutomatonTestUtils.create_pga
-# assert_pgas_equal = AutomatonTestUtils.assert_equal_pga
+create_pga = AutomatonTestUtils.create_pga
+assert_equal_pga = AutomatonTestUtils.assert_equal_pga
 
-# # FIXME
-def test():
-    assert False
+def to_product_state(left: int, right: int, right_namespace:int=0):
+        return ProductState(State(1, left), State(right_namespace, right))
 
-# def test_decrement_no_change():
-#     """No transition with the requested indeterminate."""
-#     aut = make_pga(0, 1, [(0, 0, "Y", Rational(1, 2))], {(1, 0)}, {(1, 0)})
-#     expected = PGA(
-#         {State(0, 0), State(1, 0)},
-#         [Transition(State(0, 0), State(0, 0), "Y", Rational(1, 2))],
-#         {(1, State(0, 0)), (1, State(1, 0))},
-#         {(1, State(0, 0))},
-#     )
-#     assert_pgas_equal(expected, aut.decrement("X"))
-
-
-# def test_decrement_no_branching():
-#     """A singular branch with the requested indeterminate present."""
-#     aut = make_pga(0, 1, [(0, 0, "X", Rational(1, 2))], {(1, 0)}, {(1, 0)})
-#     p00 = product_state(0, 0, 0)
-#     p01 = product_state(0, 0, 1)
-#     expected = PGA(
-#         {State(0, 0), p00, p01},
-#         [Transition(p00, p01, weight=Rational(1, 2))],
-#         {(1, State(0, 0)), (1, p00)},
-#         {(Rational(1, 2), State(0, 0)), (Rational(1, 2), p01)},
-#     )
-#     assert_pgas_equal(expected, aut.decrement("X"))
+def test_decrement_no_change():
+    """No transition with the requested indeterminate."""
+    aut = create_pga(0, 1, [(0, 0, "Y", Rational(1, 2))], {(1, 0)}, {(1, 0)})
+    expected = PGA(
+        {State(0, 0), State(1, 0)},
+        [Transition(State(0, 0), State(0, 0), "Y", Rational(1, 2))],
+        {(1, State(0, 0)), (1, State(1, 0))},
+        {(1, State(0, 0))},
+    )
+    assert_equal_pga(expected, aut.decrement("X"))
 
 
-# def test_decrement_branching_no_constant():
-#     """Branching automaton where the coefficient of X^0 is zero."""
-#     aut = make_pga(
-#         0,
-#         3,
-#         [(0, 1, "X", Rational(1, 2)), (0, 2, "X", Rational(1, 2))],
-#         {(1, 0)},
-#         {(1, 1), (1, 2)},
-#     )
-#     p00 = product_state(0, 0, 0)
-#     p11 = product_state(0, 1, 1)
-#     p21 = product_state(0, 2, 1)
-#     expected = PGA(
-#         {p00, p11, p21},
-#         [Transition(p00, p11, weight=Rational(1, 2)), Transition(p00, p21, weight=Rational(1, 2))],
-#         {(1, p00)},
-#         {(1, p11), (1, p21)},
-#     )
-#     assert_pgas_equal(expected, aut.decrement("X"))
+def test_decrement_no_branching():
+    aut = create_pga(1, 2, [(0, 1, "X", Rational(1,2))], [(1,0)], [(2,1)])
+    right_namespace = current_state_namespace() + 1
+    # Shorthands for the states
+    # Note that the 'right' state has namespace '0' as we assume this to be dynamically assigned by the program
+    p00 = to_product_state(0,0, right_namespace)
+    p11 = to_product_state(1,1, right_namespace)
 
-#     aut = make_pga(
-#         2,
-#         4,
-#         [
-#             (0, 1, "X", Rational(1, 2)),
-#             (0, 2, "X", Rational(1, 2)),
-#             (1, 3, "X", 1),
-#         ],
-#         {(1, 0)},
-#         {(1, 2), (1, 3)},
-#     )
-#     p20 = product_state(2, 0, 0)
-#     p21 = product_state(2, 1, 1)
-#     p22 = product_state(2, 2, 1)
-#     p23 = product_state(2, 3, 1)
-#     expected = PGA(
-#         {p20, p21, p22, p23},
-#         [
-#             Transition(p20, p21, weight=Rational(1, 2)),
-#             Transition(p20, p22, weight=Rational(1, 2)),
-#             Transition(p21, p23, "X"),
-#         ],
-#         {(1, p20)},
-#         {(1, p22), (1, p23)},
-#     )
-#     assert_pgas_equal(expected, aut.decrement("X"))
+    expected = PGA(
+        {p00, p11},
+        [Transition(p00, p11, weight=Rational(1,2))],
+        {(1, p00)},
+        {(2, p11)}
+    )
+    
+    assert_equal_pga(expected, aut.decrement("X"))
 
+def test_decrement_multiple_branches():
+    aut = create_pga(1, 6, [(0,1, "X", Rational(1,2)), (2, 3, "X", Rational(1,4)), (4,5, None, Rational(2,3))], [(1,0), (1,2), (1,4)], [(1,1), (1,3), (1,5)])
+    
+    right_namespace = current_state_namespace() + 1
+    
+    p00 = to_product_state(0, 0, right_namespace)
+    p11 = to_product_state(1, 1, right_namespace)
+    p20 = to_product_state(2, 0, right_namespace)
+    p31 = to_product_state(3, 1, right_namespace)
+    s4 = State(1,4)
+    s5 = State(1, 5)
+    
+    expected = PGA(
+        {p00, p11, p20, p31, s4, s5},
+        [Transition(p00, p11, weight=Rational(1,2)), Transition(p20, p31, weight=Rational(1,4)), Transition(s4, s5, weight=Rational(2,3))],
+        {(1, p00), (1, p20), (1,s4)},
+        {(1, p11), (1, p31), (1, s5)}
+    )
+    
+    assert_equal_pga(expected, aut.decrement("X"))
+    
 
-# def test_decrement_branching_constant():
-#     """Branching automaton where the coefficient of X^0 is nonzero."""
-#     aut = make_pga(
-#         0,
-#         3,
-#         [(0, 1, "X", Rational(1, 2)), (0, 2, "X", Rational(1, 2))],
-#         {(1, 0)},
-#         {(1, 0), (1, 1), (1, 2)},
-#     )
-#     p00 = product_state(0, 0, 0)
-#     p11 = product_state(0, 1, 1)
-#     p21 = product_state(0, 2, 1)
-#     expected = PGA(
-#         {State(0, 0), p00, p11, p21},
-#         [Transition(p00, p11, weight=Rational(1, 2)), Transition(p00, p21, weight=Rational(1, 2))],
-#         {(1, State(0, 0)), (1, p00)},
-#         {(1, State(0, 0)), (1, p11), (1, p21)},
-#     )
-#     assert_pgas_equal(expected, aut.decrement("X"))
+def test_decrement_self_loop():
+    aut = create_pga(1,1, [(0,0, "Y", Rational(1,2))], [(1,0)], [(Rational(1,2), 0)])
+    
+    right_namespace = current_state_namespace() + 1
+    
+    p00 = to_product_state(0, 0, right_namespace)
+    p01 = to_product_state(0, 1, right_namespace)
+    s0 = State(1, 0)
+        
+    expected = PGA(
+        {p00, p01, s0},
+        [Transition(p01, p01, "Y", Rational(1,2)), Transition(p00, p01,weight=Rational(1,2))],
+        {(1, p00), (1, s0)},
+        {(Rational(1,2), p01), (Rational(1,2), s0)}
+    )
+    
+    assert_equal_pga(expected, aut.decrement("Y"))
