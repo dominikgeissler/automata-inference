@@ -1,7 +1,10 @@
 from automata_inference.automata.model import Automaton, PGA, DFA
 
+from typing import TypeVar
 
-def minimize(aut: Automaton) -> Automaton:
+A = TypeVar("A", bound=Automaton)
+
+def minimize(aut: A) -> A:
     """Minimizes the given automaton by removing non-coaccessible states and merging redundant states.
 
     Args:
@@ -16,7 +19,7 @@ def minimize(aut: Automaton) -> Automaton:
     return aut
 
 
-def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
+def remove_noncoaccessible_states(aut: A) -> A:
     """Removes unreachable and non-coaccessible states.
 
     Args:

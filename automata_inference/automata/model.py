@@ -40,8 +40,8 @@ def current_state_namespace() -> int:
 
 @dataclass(frozen=True)
 class ProductState:
-    left: State
-    right: State
+    left: StateLike
+    right: StateLike
 
     def __str__(self):
         return f"({self.left}, {self.right})"
@@ -49,16 +49,13 @@ class ProductState:
 
 @dataclass(frozen=True)
 class IndexedState:
-    state: State
+    state: StateLike
     index: int
 
     def __str__(self):
         return f"{self.state}_{self.index}"
 
-
-class StateLike:
-    State | ProductState | IndexedState
-
+StateLike = State | ProductState | IndexedState
 
 @dataclass(frozen=True)
 class Transition:
@@ -154,7 +151,7 @@ class Automaton(ABC):
             if transition.symbol == symbol
         }
 
-    def get_symbols(self) -> set[str]:
+    def get_symbols(self) -> set[str | None]:
         """Returns the set of symbols used within the automaton.
 
         Returns:
@@ -297,8 +294,9 @@ class PGA(Automaton):
         for symbol in self.get_symbols() & other.get_symbols():
             self_transitions = self.get_transitions_for_symbol(symbol)
             other_transitions = other.get_transitions_for_symbol(symbol)
-            # Add transitions if the symbols on them coincide.
-            new_transition_matrix = new_transition_matrix | {
+            # Add transitions if the symbols on them coincide (and "multiply" the weights)
+            
+            new_transition_matrix.update({
                 Transition(
                     ProductState(transition1.source, transition2.source),
                     ProductState(transition1.target, transition2.target),
@@ -307,10 +305,10 @@ class PGA(Automaton):
                 )
                 for transition1 in self_transitions
                 for transition2 in other_transitions
-            }
+            })
 
         # Add "epsilon"-transitions
-        new_transition_matrix = new_transition_matrix | {
+        new_transition_matrix.update({
             Transition(
                 ProductState(transition.source, q),
                 ProductState(transition.target, q),
@@ -318,17 +316,17 @@ class PGA(Automaton):
             )
             for transition in self.get_transitions_for_symbol(None)
             for q in other.states
-        }
-        new_initial = set(
+        })
+        new_initial = {
             (c, ProductState(state1, state2))
             for (c, state1) in self.initial
             for state2 in other.initial
-        )
-        new_final = set(
+        }
+        new_final = {
             (c, ProductState(state1, state2))
             for (c, state1) in self.final
             for state2 in other.final
-        )
+        }
         from automata_inference.automata.operations.minimization import minimize
 
         return minimize(PGA(new_states, new_transition_matrix, new_initial, new_final))

@@ -1,7 +1,10 @@
-from automata_inference.programs.handlers.distribution_handler import (
-    DistributionHandler,
+from automata_inference.automata.factory import DFAFactory, PGAFactory
+from automata_inference.automata.model import (
+    PGA,
+    State,
+    Transition,
+    new_state_namespace,
 )
-from automata_inference.programs.handlers.guard_handler import GuardHandler
 from automata_inference.parser.ast.statements import (
     AssignStatement,
     CoinflipStatement,
@@ -13,36 +16,31 @@ from automata_inference.parser.ast.statements import (
     MonusStatement,
     ObserveStatement,
     Program,
-    SequentialCompositionStatement,
     Rhs,
+    SequentialCompositionStatement,
     SkipStatement,
     Statement,
     VariableRhs,
 )
-from automata_inference.automata.model import (
-    PGA,
-    new_state_namespace,
-    State,
-    Transition,
+from automata_inference.programs.handlers.distribution_handler import (
+    DistributionHandler,
 )
+from automata_inference.programs.handlers.guard_handler import GuardHandler
 from automata_inference.programs.handlers.query_handler import QueryHandler
-from automata_inference.automata.factory import PGAFactory, DFAFactory
-from automata_inference.parser.ast.guards import Guard
-from automata_inference.parser.ast.distributions import Distribution
-from automata_inference.parser.ast.queries import Query
-from automata_inference.visualization.graphviz import visualize
 
 compile_distribution = DistributionHandler.compile
 evaluate_query = QueryHandler.evaluate_query
 
 
 class StatementHandler:
-    def __init__(self, indeterminates: set[str]):
+    def __init__(self, indeterminates: frozenset[str]):
         self.indeterminates = indeterminates
         self.guard_handler = GuardHandler(indeterminates)
 
     def compile_program(self, program: Program, pga: PGA) -> PGA:
-        res = self._compile(program.body, pga)
+        res = pga
+        if program.body:
+            res = self._compile(program.body, pga)
         if program.is_observe:
             res = res.normalize()
         if program.query:
@@ -69,7 +67,8 @@ class StatementHandler:
             return self._compile_observe(statement, pga)
         if isinstance(statement, SequentialCompositionStatement):
             return self._compile_sequence(statement, pga)
-
+        raise ValueError(f"Unsupported statement type: {type(statement)}")
+    
     def _compile_assignment(self, statement: AssignStatement, pga: PGA) -> PGA:
         indeterminate = statement.variable
         return self._compile_rhs(
@@ -93,6 +92,8 @@ class StatementHandler:
         filtered_then = pga.filter(guard_dfa)
         filtered_else = pga.filter(neg_guard_dfa)
         res_left = self._compile(statement.then_statement, filtered_then)
+        if statement.else_statement is None:
+            return res_left
         res_right = self._compile(statement.else_statement, filtered_else)
         return res_left.weighted_union(res_right, 1, 1)
 
@@ -112,10 +113,10 @@ class StatementHandler:
             s0, s1, s2 = State(namespace, 0), State(namespace, 1), State(namespace, 2)
             subs = PGA(
                 {s0, s1, s2},
-                [
+                {
                     Transition(s0, s1, symbol=rhs.variable),
                     Transition(s1, s2, symbol=indeterminate),
-                ],
+                },
                 {(1, s0)},
                 {(1, s2)},
             )
@@ -127,3 +128,4 @@ class StatementHandler:
             distribution_iid = compile_distribution(rhs.distribution, indeterminate)
             subs = other_dirac.concat(distribution_iid)
             return pga.transition_substitution(rhs.variable, subs)
+        raise ValueError(f"Unsupported RHS type: {type(rhs)}")

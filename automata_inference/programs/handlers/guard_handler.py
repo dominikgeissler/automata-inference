@@ -14,7 +14,7 @@ from automata_inference.automata.factory import DFAFactory
 
 class GuardHandler:
 
-    def __init__(self, indeterminates: set[str]):
+    def __init__(self, indeterminates: frozenset[str]):
         self.indeterminates = indeterminates
 
     def compile(self, guard: Guard) -> DFA:
@@ -44,3 +44,4 @@ class GuardHandler:
                     DFAFactory.neg(self.compile(guard.right)),
                 )
             )
+        raise ValueError(f"Unsupported guard type: {type(guard)}")
