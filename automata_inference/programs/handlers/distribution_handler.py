@@ -1,13 +1,13 @@
+from automata_inference.automata.factory import PGAFactory
+from automata_inference.automata.model import PGA
 from automata_inference.parser.ast.distributions import (
-    Distribution,
-    Dirac,
     Bernoulli,
+    Dirac,
+    Distribution,
+    Geometric,
     NegBinom,
     Uniform,
-    Geometric,
 )
-from automata_inference.automata.model import PGA
-from automata_inference.automata.factory import PGAFactory
 
 
 class DistributionHandler:
@@ -26,3 +26,4 @@ class DistributionHandler:
             return PGAFactory.neg_binomial(
                 indeterminate, distribution.n, distribution.p
             )
+        raise ValueError(f"Unsupported distribution type: {type(distribution)}")

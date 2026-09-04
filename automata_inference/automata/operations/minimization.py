@@ -1,4 +1,4 @@
-from automata_inference.automata.model import Automaton, PGA, DFA
+from automata_inference.automata.model import Automaton, PGA, DFA, StateLike
 
 from typing import TypeVar
 
@@ -43,8 +43,8 @@ def remove_noncoaccessible_states(aut: A) -> A:
             else possible_weighted_state
         )
 
-    successors = {state: set() for state in aut.states}
-    predecessors = {state: set() for state in aut.states}
+    successors: dict[StateLike, set[StateLike]] = {state: set() for state in aut.states}
+    predecessors: dict[StateLike, set[StateLike]] = {state: set() for state in aut.states}
     for transition in aut.transition_matrix:
         successors[transition.source].add(transition.target)
         predecessors[transition.target].add(transition.source)
@@ -59,7 +59,7 @@ def remove_noncoaccessible_states(aut: A) -> A:
             stack.extend(successors[curr])
 
     coaccessible = set()
-    stack = list(get_state(el) for el in aut.final)
+    stack = [get_state(el) for el in aut.final]
 
     while stack:
         curr = stack.pop()
@@ -71,7 +71,7 @@ def remove_noncoaccessible_states(aut: A) -> A:
     if not keep:
         from automata_inference.automata.factory import DFAFactory, PGAFactory
 
-        return PGAFactory.zero() if is_pga else DFAFactory.false(aut.get_symbols())  # type: ignore[return-value]
+        return PGAFactory.zero() if is_pga else DFAFactory.false({x for x in aut.get_symbols() if x is not None})  # type: ignore[return-value]
 
     aut.states = keep
     new_transition_matrix = {

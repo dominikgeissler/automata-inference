@@ -63,7 +63,7 @@ def test_parser_empty_program():
     parsed = parse_string("var X;")
 
     assert parsed.body is None
-    assert parsed.variables == frozenset({"X"})
+    assert parsed.variables == set({"X"})
     assert parsed.query is None
     assert not parsed.is_observe
 

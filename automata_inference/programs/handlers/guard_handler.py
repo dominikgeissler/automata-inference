@@ -1,20 +1,20 @@
+from automata_inference.automata.factory import DFAFactory
+from automata_inference.automata.model import DFA
 from automata_inference.parser.ast.guards import (
-    Guard,
-    Equals,
-    LessThan,
-    Not,
-    ModuloEquals,
-    Implies,
     And,
+    Equals,
+    Guard,
+    Implies,
+    LessThan,
+    ModuloEquals,
+    Not,
     Or,
 )
-from automata_inference.automata.model import DFA
-from automata_inference.automata.factory import DFAFactory
 
 
 class GuardHandler:
 
-    def __init__(self, indeterminates: frozenset[str]):
+    def __init__(self, indeterminates: set[str]):
         self.indeterminates = indeterminates
 
     def compile(self, guard: Guard) -> DFA:

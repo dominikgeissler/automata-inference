@@ -1,6 +1,6 @@
 from graphviz import Digraph
 
-from automata_inference.automata.model import Automaton, PGA
+from automata_inference.automata.model import Automaton, PGA, StateLike
 
 
 def visualize(aut: Automaton, out_path="aut", view=False):
@@ -41,7 +41,7 @@ def visualize(aut: Automaton, out_path="aut", view=False):
         for state in aut.final:
             dot.node(node_id(state), shape="doublecircle")
 
-    self_loops: dict[str, list[str]] = {node_id(state): [] for state in aut.states}
+    self_loops: dict[StateLike, list[str]] = {node_id(state): [] for state in aut.states}
     for transition in aut.transition_matrix:
         source = node_id(transition.source)
         target = node_id(transition.target)
@@ -62,5 +62,5 @@ def visualize(aut: Automaton, out_path="aut", view=False):
 
     for state, labels in self_loops.items():
         if labels:
-            dot.edge(state, state, ",".join(labels))
+            dot.edge(str(state), str(state), ",".join(labels))
     dot.render(out_path, format="pdf", view=view, cleanup=True)

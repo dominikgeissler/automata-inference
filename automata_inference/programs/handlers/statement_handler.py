@@ -33,7 +33,7 @@ evaluate_query = QueryHandler.evaluate_query
 
 
 class StatementHandler:
-    def __init__(self, indeterminates: frozenset[str]):
+    def __init__(self, indeterminates: set[str]):
         self.indeterminates = indeterminates
         self.guard_handler = GuardHandler(indeterminates)
 

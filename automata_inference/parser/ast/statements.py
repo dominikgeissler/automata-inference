@@ -88,5 +88,5 @@ class SequentialCompositionStatement(Statement):
 class Program:
     body: Statement | None
     is_observe: bool
-    variables: frozenset[str]
+    variables: set[str]
     query: Query | None = None

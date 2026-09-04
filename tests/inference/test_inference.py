@@ -1,2 +1,2 @@
 def test_inference():
-    assert False # FIXME
+    assert False # Integration test here...

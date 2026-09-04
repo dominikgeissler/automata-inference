@@ -1,10 +1,31 @@
 from functools import reduce
 
-from symengine import Rational
 from lark import Lark, Tree
+from symengine import Rational
 
-from automata_inference.parser.grammar import get_grammar
-
+from automata_inference.parser.ast.distributions import (
+    Bernoulli,
+    Dirac,
+    Distribution,
+    Geometric,
+    NegBinom,
+    Uniform,
+)
+from automata_inference.parser.ast.guards import (
+    And,
+    Equals,
+    Implies,
+    LessThan,
+    ModuloEquals,
+    Not,
+    Or,
+)
+from automata_inference.parser.ast.queries import (
+    MixedMoment,
+    PosteriorProbability,
+    Query,
+    UnivariateMoment,
+)
 from automata_inference.parser.ast.statements import (
     AssignStatement,
     CoinflipStatement,
@@ -22,33 +43,7 @@ from automata_inference.parser.ast.statements import (
     Statement,
     VariableRhs,
 )
-
-from automata_inference.parser.ast.guards import (
-    And,
-    Equals,
-    Guard,
-    Implies,
-    LessThan,
-    ModuloEquals,
-    Not,
-    Or,
-)
-
-from automata_inference.parser.ast.distributions import (
-    Distribution,
-    Bernoulli,
-    Dirac,
-    Geometric,
-    NegBinom,
-    Uniform,
-)
-
-from automata_inference.parser.ast.queries import (
-    MixedMoment,
-    PosteriorProbability,
-    Query,
-    UnivariateMoment,
-)
+from automata_inference.parser.grammar import get_grammar
 
 # Heavily inspired by Philipp Schröers' work:
 # https://github.com/Philipp15b/probably
@@ -91,13 +86,13 @@ def _parse_tree(tree: Tree) -> Program:
         return Program(
             body,
             any(isinstance(st, ObserveStatement) for st in statements),
-            frozenset(variables),
+            set(variables),
             query,
         )
     return Program(
         body,
         any(isinstance(st, ObserveStatement) for st in statements),
-        frozenset(variables),
+        set(variables),
     )
 
 
@@ -137,13 +132,13 @@ def _parse_statement(tree: Tree, variables: set[str]):
 
 def _parse_statement_assignment(tree: Tree, variables: set[str]):
     indeterminate = _parse_var(tree.children[0], variables)
-    rhs = _parse_rhs(tree.children[1], indeterminate, variables)
+    rhs = _parse_rhs(tree.children[1], variables)
     return AssignStatement(indeterminate, rhs)
 
 
 def _parse_statement_increment(tree: Tree, variables: set[str]):
     indeterminate = _parse_var(tree.children[0], variables)
-    rhs = _parse_rhs(tree.children[1], indeterminate, variables)
+    rhs = _parse_rhs(tree.children[1], variables)
     return IncrementStatement(indeterminate, rhs)
 
 
@@ -191,14 +186,14 @@ def _parse_frac(tree: Tree) -> Rational:
     return Rational(tree.children[0], tree.children[1])
 
 
-def _parse_rhs(tree: Tree, indeterminate: str, variables: set[str]) -> Rhs:
+def _parse_rhs(tree: Tree, variables: set[str]) -> Rhs:
     if tree.data == "const":
         return ConstantRhs(_parse_const(tree))
     if tree.data == "iid":
-        distribution, variable = _parse_iid(tree, indeterminate, variables)
+        distribution, variable = _parse_iid(tree, variables)
         return IidRhs(distribution, variable)
     if tree.data == "distribution":
-        return DistributionRhs(_parse_distribution(tree.children[0], indeterminate))
+        return DistributionRhs(_parse_distribution(tree.children[0]))
     if tree.data == "var":
         return VariableRhs(_parse_var(tree.children[0], variables))
     raise ValueError(f"Unknown rhs, {tree.data}")
@@ -220,49 +215,49 @@ def _parse_int(tree: Tree) -> int:
 
 
 def _parse_iid(
-    tree: Tree, indeterminate: str, variables: set[str]
+    tree: Tree, variables: set[str]
 ) -> tuple[Distribution, str]:
-    distribution = _parse_distribution(tree.children[0], indeterminate)
+    distribution = _parse_distribution(tree.children[0])
     indeterminate_rhs = _parse_var(tree.children[1], variables)
     return (distribution, indeterminate_rhs)
 
 
-def _parse_distribution(tree: Tree, indeterminate: str) -> Distribution:
+def _parse_distribution(tree: Tree) -> Distribution:
     if tree.data == "geometric":
-        return _parse_distribution_geometric(tree, indeterminate)
+        return _parse_distribution_geometric(tree)
     if tree.data == "uniform":
-        return _parse_distribution_uniform(tree, indeterminate)
+        return _parse_distribution_uniform(tree)
     if tree.data == "negbinom":
-        return _parse_distribution_negbinom(tree, indeterminate)
+        return _parse_distribution_negbinom(tree)
     if tree.data == "bernoulli":
-        return _parse_distribution_bernoulli(tree, indeterminate)
+        return _parse_distribution_bernoulli(tree)
     if tree.data == "dirac":
-        return _parse_distribution_dirac(tree, indeterminate)
+        return _parse_distribution_dirac(tree)
     raise ValueError(f"Unknown distribution, {tree.data}")
 
 
-def _parse_distribution_geometric(tree: Tree, indeterminate: str) -> Geometric:
+def _parse_distribution_geometric(tree: Tree) -> Geometric:
     p = _parse_frac(tree.children[0])
     return Geometric(p)
 
 
-def _parse_distribution_uniform(tree: Tree, indeterminate: str) -> Uniform:
+def _parse_distribution_uniform(tree: Tree) -> Uniform:
     n = _parse_int(tree.children[0])
     return Uniform(n)
 
 
-def _parse_distribution_negbinom(tree: Tree, indeterminate: str) -> NegBinom:
+def _parse_distribution_negbinom(tree: Tree) -> NegBinom:
     n = _parse_int(tree.children[0])
     p = _parse_frac(tree.children[1])
     return NegBinom(n, p)
 
 
-def _parse_distribution_bernoulli(tree: Tree, indeterminate: str) -> Bernoulli:
+def _parse_distribution_bernoulli(tree: Tree) -> Bernoulli:
     p = _parse_frac(tree.children[0])
     return Bernoulli(p)
 
 
-def _parse_distribution_dirac(tree: Tree, indeterminate: str) -> Dirac:
+def _parse_distribution_dirac(tree: Tree) -> Dirac:
     n = _parse_int(tree.children[0])
     return Dirac(n)
 

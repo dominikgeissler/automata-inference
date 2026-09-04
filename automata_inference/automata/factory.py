@@ -1,13 +1,14 @@
-from automata_inference.automata.model import (
-    PGA,
-    DFA,
-    new_state_namespace,
-    State,
-    Transition,
-    ProductState,
-    StateLike,
-)
 from symengine import Rational
+
+from automata_inference.automata.model import (
+    DFA,
+    PGA,
+    ProductState,
+    State,
+    StateLike,
+    Transition,
+    new_state_namespace,
+)
 
 
 class PGAFactory:
@@ -154,7 +155,7 @@ class PGAFactory:
         return aut
 
 
-# FIXME
+# TODO
 #   here i actually need all indeterminates to introduce the self-loops
 #   i could also handle this in the filter-method
 
@@ -189,9 +190,9 @@ class DFAFactory:
             DFA: The DFA encoding the guard.
         """
         namespace = new_state_namespace()
-        states = {State(namespace, i) for i in range(val + 1)}
-        initial = {State(namespace, 0)}
-        final = {State(namespace, i) for i in range(val)}
+        states: set[StateLike] = {State(namespace, i) for i in range(val + 1)}
+        initial: set[StateLike] = {State(namespace, 0)}
+        final: set[StateLike] = {State(namespace, i) for i in range(val)}
         transition_matrix = (
             {
                 Transition(State(namespace, i), State(namespace, i + 1), indeterminate)
@@ -220,9 +221,9 @@ class DFAFactory:
         """
         assert modulus > residue, "Modulus has to be greater than residue."
         namespace = new_state_namespace()
-        states = {State(namespace, i) for i in range(modulus)}
-        initial = {State(namespace, 0)}
-        final = {State(namespace, residue)}
+        states: set[StateLike] = {State(namespace, i) for i in range(modulus)}
+        initial: set[StateLike] = {State(namespace, 0)}
+        final: set[StateLike] = {State(namespace, residue)}
         transition_matrix = (
             {
                 Transition(State(namespace, i), State(namespace, i + 1), indeterminate)
@@ -252,10 +253,10 @@ class DFAFactory:
         """
         # assert val >= 0, f"n has to be greater or equal to 0, got {val=}"
         namespace = new_state_namespace()
-        states = {State(namespace, i) for i in range(val + 2)}
-        initial = {State(namespace, 0)}
-        final = {State(namespace, val)}
-        transition_matrix = (
+        states: set[StateLike] = {State(namespace, i) for i in range(val + 2)}
+        initial: set[StateLike] = {State(namespace, 0)}
+        final: set[StateLike] = {State(namespace, val)}
+        transition_matrix: set[Transition] = (
             {
                 Transition(State(namespace, i), State(namespace, i + 1), indeterminate)
                 for i in range(val + 1)
@@ -295,22 +296,22 @@ class DFAFactory:
         Returns:
             DFA: The resulting intersection DFA.
         """
-        states = {
+        states: set[StateLike] = {
             ProductState(state1, state2)
             for state1 in dfa1.states
             for state2 in dfa2.states
         }
-        initial = {
+        initial: set[StateLike] = {
             ProductState(state1, state2)
             for state1 in dfa1.initial
             for state2 in dfa2.initial
         }
-        final = {
+        final: set[StateLike] = {
             ProductState(state1, state2)
             for state1 in dfa1.final
             for state2 in dfa2.final
         }
-        transition_matrix = {}
+        transition_matrix: set[Transition] = set()
         for indeterminate in dfa1.get_symbols().intersection(dfa2.get_symbols()):
             transition_matrix = transition_matrix | {
                 Transition(
