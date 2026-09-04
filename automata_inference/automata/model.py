@@ -297,17 +297,7 @@ class PGA(Automaton):
         for symbol in self.get_symbols() & other.get_symbols():
             self_transitions = self.get_transitions_for_symbol(symbol)
             other_transitions = other.get_transitions_for_symbol(symbol)
-            # Add transitions if the symbols on them coincide (and "multiply" the weights)
-            added_trans = {
-                Transition(
-                    ProductState(transition1.source, transition2.source),
-                    ProductState(transition1.target, transition2.target),
-                    symbol=symbol,
-                    weight=transition1.weight,
-                )
-                for transition1 in self_transitions
-                for transition2 in other_transitions
-            }
+            # Add transitions if the symbols on them coincide.
             new_transition_matrix = new_transition_matrix | {
                 Transition(
                     ProductState(transition1.source, transition2.source),

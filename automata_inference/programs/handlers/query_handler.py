@@ -21,7 +21,7 @@ class QueryHandler:
         if isinstance(query, PosteriorProbability):
             guard_handler = GuardHandler(pga.get_symbols())
             filtered_pga = pga.filter(guard_handler.compile(query.guard))
-            return minimize(filtered_pga).get_probability_mass()
+            return filtered_pga.get_probability_mass()
         if isinstance(query, UnivariateMoment):
             # i represents the layer
             new_states = {
@@ -134,7 +134,7 @@ class QueryHandler:
             }
 
             # Final states are all final states from the PGA on layer 0
-            new_initial = {
+            new_final = {
                 (weight, IndexedState(state, 0)) for (weight, state) in pga.final
             }
 

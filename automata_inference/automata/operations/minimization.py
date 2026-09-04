@@ -68,7 +68,7 @@ def remove_noncoaccessible_states(aut: Automaton) -> Automaton:
     if not keep:
         from automata_inference.automata.factory import DFAFactory, PGAFactory
 
-        return PGAFactory.zero() if is_pga else DFAFactory.false()  # type: ignore[return-value]
+        return PGAFactory.zero() if is_pga else DFAFactory.false(aut.get_symbols())  # type: ignore[return-value]
 
     aut.states = keep
     new_transition_matrix = {
