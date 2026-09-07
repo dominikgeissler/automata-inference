@@ -1,5 +1,6 @@
-from symengine import Rational
 from collections import Counter
+
+from symengine import Rational
 
 from automata_inference.automata.model import PGA, State, Transition
 

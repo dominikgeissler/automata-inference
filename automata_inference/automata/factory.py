@@ -280,12 +280,13 @@ class DFAFactory:
         Returns:
             DFA: The complement of the DFA.
         """
-        # We need to update the state names
+        # We need to update the state names.
         namespace = new_state_namespace()
+        state_map: dict[StateLike, StateLike]
         if all(isinstance(state, State) for state in dfa.states):
             state_map = {
                 state: State(namespace, state.index)
-                for state in dfa.states
+                for state in dfa.states if isinstance(state, State)
             }
         else:
             state_map = {

@@ -80,7 +80,6 @@ def test_remove_non_coaccessible_states_remove_final_states():
 
 def test_remove_everything():
     """If everything is removed, the zero-subdistribution PGA should be returned"""
-
     # No final state reachable
     aut1 = create_pga(
         0, 3, [(0, 1, "X", 1), (1, 0, "Y", Rational(1, 2))], [(1, 0)], [(1, 2)]

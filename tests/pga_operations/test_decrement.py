@@ -2,9 +2,9 @@ from symengine import Rational
 
 from automata_inference.automata.model import (
     PGA,
+    ProductState,
     State,
     Transition,
-    ProductState,
     current_state_namespace,
 )
 from tests.utils import AutomatonTestUtils

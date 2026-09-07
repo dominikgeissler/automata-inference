@@ -30,27 +30,25 @@ def main(
     statement_handler = StatementHandler(program.variables)
     start = time.time()
     out = statement_handler.compile_program(program, input_pga)
-    
+
     print()
     print("----------------------------------")
     print("-       Finished Analysis        -")
     print(f"- in {round(time.time() - start, 17)} seconds -")
     print("----------------------------------")
     print()
-    
+
     if visualize_posterior:
         visualize(
             out,
             view=True,
-            show_state_labels=False,         # can be changed later for debug or sth like that
+            show_state_labels=False,  # can be changed later for debug or sth like that
         )
 
 
 def create_parser():
     """Creates and returns the parser of the CLI arguments."""
-    argument_parser = ArgumentParser(
-        description="Anaylsis of discrete probabilistic programs."
-    )
+    argument_parser = ArgumentParser(description="Anaylsis of discrete probabilistic programs.")
 
     argument_parser.add_argument("program_path", help="Path to the program file.")
 
@@ -65,7 +63,4 @@ def create_parser():
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args(sys.argv[1:])
-    main(
-        program_path=args.program_path,
-        visualize_posterior=args.visualize_posterior
-    )
+    main(program_path=args.program_path, visualize_posterior=args.visualize_posterior)

@@ -1,6 +1,5 @@
-from pathlib import Path
-
 from fractions import Fraction
+from pathlib import Path
 
 from automata_inference.automata.factory import PGAFactory
 from automata_inference.parser.parser import parse

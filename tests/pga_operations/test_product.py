@@ -1,6 +1,6 @@
 from symengine import Rational
 
-from automata_inference.automata.model import DFA, State, Transition, PGA, ProductState
+from automata_inference.automata.model import DFA, PGA, ProductState, State, Transition
 from tests.utils import AutomatonTestUtils
 
 create_pga = AutomatonTestUtils.create_pga
@@ -9,7 +9,6 @@ assert_equal_pga = AutomatonTestUtils.assert_equal_pga
 
 def test_product_true():
     """Filters nothing"""
-
     aut = create_pga(
         0,
         3,
@@ -87,7 +86,6 @@ def test_product_false():
 
 def test_product_filter():
     """Filters something."""
-
     # Geometric distribution in X (with parameter 1/2)
     aut = create_pga(
         0, 1, [(0, 0, "X", Rational(1, 2))], [(1, 0)], [(Rational(1, 2), 0)]

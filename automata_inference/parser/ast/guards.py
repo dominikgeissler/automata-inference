@@ -23,11 +23,11 @@ class LessThan(Guard):
 class ModuloEquals(Guard):
     """Models the guard `variable` mod `modulus` = `residue`.
         
-        Args:
-            variable (str): The variable to be compared.
-            modulus (int): The modulus of the operation.
-            residue (int): The residue of the operation.
-        """
+    Args:
+        variable (str): The variable to be compared.
+        modulus (int): The modulus of the operation.
+        residue (int): The residue of the operation.
+    """
     variable: str
     modulus: int
     residue: int

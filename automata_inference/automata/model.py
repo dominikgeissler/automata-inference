@@ -176,20 +176,32 @@ class PGA(Automaton):
     transition_matrix: set[Transition]
     initial: set[tuple[Rational, StateLike]]
     final: set[tuple[Rational, StateLike]]
-    
-    def make_indexed(self, index: int=0) -> PGA:
-        new_states: set[StateLike] = {
-            IndexedState(state, index) for state in self.states
-        }
+
+    def make_indexed(self, index: int = 0) -> PGA:
+        """Changes the statenames of the automaton by adding indices.
+
+        Args:
+            index (int, optional): The index to add to the state names. Defaults to 0.
+
+        Returns:
+            PGA: The resulting PGA with indexed state names.
+        """
+        new_states: set[StateLike] = {IndexedState(state, index) for state in self.states}
         new_transition_matrix = {
-            Transition(IndexedState(transition.source, index), IndexedState(transition.target, index), transition.symbol, transition.weight) for transition in self.transition_matrix
+            Transition(
+                IndexedState(transition.source, index),
+                IndexedState(transition.target, index),
+                transition.symbol,
+                transition.weight,
+            )
+            for transition in self.transition_matrix
         }
-        new_initial = {
+        new_initial: set[tuple[Rational, StateLike]] = {
             (weight, IndexedState(state, index)) for (weight, state) in self.initial
         }
-        new_final = {
-                    (weight, IndexedState(state, index)) for (weight, state) in self.final
-                }
+        new_final: set[tuple[Rational, StateLike]] = {
+            (weight, IndexedState(state, index)) for (weight, state) in self.final
+        }
         return PGA(new_states, new_transition_matrix, new_initial, new_final)
 
     def concat(self, other: PGA) -> PGA:
@@ -304,8 +316,12 @@ class PGA(Automaton):
                 for q in other.states
             }
         )
-        new_initial: set[tuple[Rational, StateLike]] = {(c, ProductState(state1, state2)) for (c, state1) in self.initial for state2 in other.initial}
-        new_final: set[tuple[Rational, StateLike]] = {(c, ProductState(state1, state2)) for (c, state1) in self.final for state2 in other.final}
+        new_initial: set[tuple[Rational, StateLike]] = {
+            (c, ProductState(state1, state2)) for (c, state1) in self.initial for state2 in other.initial
+        }
+        new_final: set[tuple[Rational, StateLike]] = {
+            (c, ProductState(state1, state2)) for (c, state1) in self.final for state2 in other.final
+        }
         from automata_inference.automata.operations.minimization import minimize
 
         return minimize(PGA(new_states, new_transition_matrix, new_initial, new_final))

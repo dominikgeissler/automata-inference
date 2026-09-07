@@ -1,7 +1,6 @@
 import pytest
 from symengine import Rational
 
-from automata_inference.parser.parser import parse_string
 from automata_inference.parser.ast.distributions import (
     Bernoulli,
     Dirac,
@@ -28,8 +27,8 @@ from automata_inference.parser.ast.statements import (
     CoinflipStatement,
     ConstantRhs,
     DistributionRhs,
-    IidRhs,
     IfStatement,
+    IidRhs,
     IncrementStatement,
     MonusStatement,
     ObserveStatement,
@@ -37,6 +36,7 @@ from automata_inference.parser.ast.statements import (
     SkipStatement,
     VariableRhs,
 )
+from automata_inference.parser.parser import parse_string
 
 
 def test_parser_undefined_variables():

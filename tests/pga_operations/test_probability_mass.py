@@ -1,9 +1,9 @@
 from fractions import Fraction
-from symengine import Rational
 
 import pytest
+from symengine import Rational
 
-from automata_inference.automata.factory import PGAFactory, PGA, State, Transition
+from automata_inference.automata.factory import PGA, PGAFactory, State, Transition
 
 
 def test_probability_mass_one():
