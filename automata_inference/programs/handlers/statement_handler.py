@@ -59,7 +59,7 @@ class StatementHandler:
         if program.is_observe:
             res = res.normalize()
         if program.query:
-            print("Evaluating query ....")
+            print(f"Evaluating query {program.query}:")
             query_result = evaluate_query(program.query, res)
             print(f"Result: {query_result}")
         return res

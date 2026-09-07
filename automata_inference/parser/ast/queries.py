@@ -15,6 +15,9 @@ class PosteriorProbability(Query):
         guard (Guard): The guard to evaluate the probability of.
     """
     guard: Guard
+    
+    def __str__(self):
+        return f"?Pr[{self.guard}]"
 
 
 @dataclass(frozen=True)
@@ -27,6 +30,9 @@ class UnivariateMoment(Query):
     """
     variable: str
     moment: int
+    
+    def __str__(self):
+        return f"?E[{self.variable}, {self.moment}]"
 
 
 @dataclass(frozen=True)
@@ -39,3 +45,6 @@ class MixedMoment(Query):
     """
     variable1: str
     variable2: str
+    
+    def __str__(self):
+        return f"?E[{self.variable1}, {self.variable2}]"

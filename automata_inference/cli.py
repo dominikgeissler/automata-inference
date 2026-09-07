@@ -27,12 +27,14 @@ def main(program_path: str, visualize_posterior: bool):
     statement_handler = StatementHandler(program.variables)
     start = time.time()
     out = statement_handler.compile_program(program, input_pga)
+    
     print()
     print("----------------------------------")
     print("-       Finished Analysis        -")
     print(f"- in {round(time.time() - start, 17)} seconds -")
     print("----------------------------------")
     print()
+    
     if visualize_posterior:
         visualize(out, view=True)
 
