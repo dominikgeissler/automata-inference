@@ -176,6 +176,21 @@ class PGA(Automaton):
     transition_matrix: set[Transition]
     initial: set[tuple[Rational, StateLike]]
     final: set[tuple[Rational, StateLike]]
+    
+    def make_indexed(self, index: int=0) -> PGA:
+        new_states: set[StateLike] = {
+            IndexedState(state, index) for state in self.states
+        }
+        new_transition_matrix = {
+            Transition(IndexedState(transition.source, index), IndexedState(transition.target, index), transition.symbol, transition.weight) for transition in self.transition_matrix
+        }
+        new_initial = {
+            (weight, IndexedState(state, index)) for (weight, state) in self.initial
+        }
+        new_final = {
+                    (weight, IndexedState(state, index)) for (weight, state) in self.final
+                }
+        return PGA(new_states, new_transition_matrix, new_initial, new_final)
 
     def concat(self, other: PGA) -> PGA:
         """Concatenates two PGA.

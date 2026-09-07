@@ -52,6 +52,12 @@ def create_parser():
         action="store_true",
         help="If set, renders the automaton representation of the normalized posterior distribution.",
     )
+    
+    argument_parser.add_argument(
+        "--visualize-posterior-simplified",
+        action="store_true",
+        help="If set, renders the automaton representation of the normalized posterior distribution. Omits state labels.",
+    )
 
     return argument_parser
 

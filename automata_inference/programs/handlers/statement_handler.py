@@ -31,6 +31,7 @@ from automata_inference.programs.handlers.query_handler import QueryHandler
 compile_distribution = DistributionHandler.compile
 evaluate_query = QueryHandler.evaluate_query
 
+COUNTER = 0
 
 class StatementHandler:
     """Handles the compilation of parsed statements into automaton transformations."""
@@ -65,6 +66,7 @@ class StatementHandler:
         return res
 
     def _compile(self, statement: Statement, pga: PGA) -> PGA:
+        from automata_inference.visualization.graphviz import visualize
         """Compile one statement into an automaton transformation."""
         if isinstance(statement, SkipStatement):
             return pga
@@ -97,8 +99,9 @@ class StatementHandler:
         return pga.decrement(statement.variable)
 
     def _compile_coinflip(self, statement: CoinflipStatement, pga: PGA) -> PGA:
-        res_left: PGA = self._compile(statement.left, pga)
-        res_right: PGA = self._compile(statement.right, pga)
+        
+        res_left: PGA = self._compile(statement.left, pga.make_indexed()) # PROBLEM states are not disjoint
+        res_right: PGA = self._compile(statement.right, pga.make_indexed(1))
         return res_left.weighted_union(res_right, statement.p, 1 - statement.p)
 
     def _compile_if(self, statement: IfStatement, pga: PGA) -> PGA:
@@ -106,11 +109,12 @@ class StatementHandler:
         neg_guard_dfa = DFAFactory.neg(guard_dfa)
         filtered_then = pga.filter(guard_dfa)
         filtered_else = pga.filter(neg_guard_dfa)
-        res_left = self._compile(statement.then_statement, filtered_then)
+        res_left = self._compile(statement.then_statement, filtered_then)           
         if statement.else_statement is None:
-            return res_left
+            return res_left.weighted_union(filtered_else, 1, 1)
         res_right = self._compile(statement.else_statement, filtered_else)
-        return res_left.weighted_union(res_right, 1, 1)
+        res = res_left.weighted_union(res_right, 1, 1)
+        return res
 
     def _compile_observe(self, statement: ObserveStatement, pga: PGA) -> PGA:
         return pga.filter(self.guard_handler.compile(statement.guard))
@@ -118,7 +122,8 @@ class StatementHandler:
     def _compile_sequence(
         self, statement: SequentialCompositionStatement, pga: PGA
     ) -> PGA:
-        return self._compile(statement.right, self._compile(statement.left, pga))
+        res = self._compile(statement.left, pga)
+        return self._compile(statement.right, res)
 
     def _compile_rhs(self, rhs: Rhs, indeterminate: str, pga: PGA) -> PGA:
         if isinstance(rhs, ConstantRhs):

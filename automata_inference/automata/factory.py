@@ -280,8 +280,25 @@ class DFAFactory:
         Returns:
             DFA: The complement of the DFA.
         """
+        # We need to update the state names
+        namespace = new_state_namespace()
+        state_map = {
+            state: State(namespace, index)
+            for index, state in enumerate(dfa.states)
+        }
         return DFA(
-            dfa.states, dfa.transition_matrix, dfa.initial, dfa.states - dfa.final
+            set(state_map.values()),
+            {
+                Transition(
+                    state_map[transition.source],
+                    state_map[transition.target],
+                    transition.symbol,
+                    transition.weight,
+                )
+                for transition in dfa.transition_matrix
+            },
+            {state_map[state] for state in dfa.initial},
+            {state_map[state] for state in dfa.states - dfa.final},
         )
 
     @classmethod
