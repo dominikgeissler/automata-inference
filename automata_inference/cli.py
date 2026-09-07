@@ -8,7 +8,10 @@ from automata_inference.programs.handlers.statement_handler import StatementHand
 from automata_inference.visualization.graphviz import visualize
 
 
-def main(program_path: str, visualize_posterior: bool):
+def main(
+    program_path: str,
+    visualize_posterior: bool,
+):
     """Main method of the program.
 
     Args:
@@ -36,7 +39,11 @@ def main(program_path: str, visualize_posterior: bool):
     print()
     
     if visualize_posterior:
-        visualize(out, view=True)
+        visualize(
+            out,
+            view=True,
+            show_state_labels=False,         # can be changed later for debug or sth like that
+        )
 
 
 def create_parser():
@@ -52,17 +59,13 @@ def create_parser():
         action="store_true",
         help="If set, renders the automaton representation of the normalized posterior distribution.",
     )
-    
-    argument_parser.add_argument(
-        "--visualize-posterior-simplified",
-        action="store_true",
-        help="If set, renders the automaton representation of the normalized posterior distribution. Omits state labels.",
-    )
-
     return argument_parser
 
 
 if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args(sys.argv[1:])
-    main(program_path=args.program_path, visualize_posterior=args.visualize_posterior)
+    main(
+        program_path=args.program_path,
+        visualize_posterior=args.visualize_posterior
+    )

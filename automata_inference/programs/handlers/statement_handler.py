@@ -31,8 +31,6 @@ from automata_inference.programs.handlers.query_handler import QueryHandler
 compile_distribution = DistributionHandler.compile
 evaluate_query = QueryHandler.evaluate_query
 
-COUNTER = 0
-
 class StatementHandler:
     """Handles the compilation of parsed statements into automaton transformations."""
     def __init__(self, indeterminates: set[str]):
@@ -100,7 +98,7 @@ class StatementHandler:
 
     def _compile_coinflip(self, statement: CoinflipStatement, pga: PGA) -> PGA:
         
-        res_left: PGA = self._compile(statement.left, pga.make_indexed()) # PROBLEM states are not disjoint
+        res_left: PGA = self._compile(statement.left, pga.make_indexed())
         res_right: PGA = self._compile(statement.right, pga.make_indexed(1))
         return res_left.weighted_union(res_right, statement.p, 1 - statement.p)
 
@@ -113,8 +111,7 @@ class StatementHandler:
         if statement.else_statement is None:
             return res_left.weighted_union(filtered_else, 1, 1)
         res_right = self._compile(statement.else_statement, filtered_else)
-        res = res_left.weighted_union(res_right, 1, 1)
-        return res
+        return res_left.weighted_union(res_right, 1, 1)
 
     def _compile_observe(self, statement: ObserveStatement, pga: PGA) -> PGA:
         return pga.filter(self.guard_handler.compile(statement.guard))

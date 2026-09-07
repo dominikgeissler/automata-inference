@@ -3,13 +3,14 @@ from graphviz import Digraph
 from automata_inference.automata.model import PGA, Automaton, StateLike
 
 
-def visualize(aut: Automaton, out_path="aut", view=False):
+def visualize(aut: Automaton, out_path="aut", view=False, show_state_labels=True):
     """Visualizes the given automaton.
 
     Args:
         aut (Automaton): The automaton to be visualized.
         out_path (str, optional): The path the visualization should be saved at. Defaults to "aut".
         view (bool, optional): Whether the file should be opened automatically. Defaults to True.
+        show_state_labels (bool, optional): Whether state names should be displayed. Defaults to True.
     """
     dot = Digraph(comment="Automaton visualization")
 
@@ -18,7 +19,7 @@ def visualize(aut: Automaton, out_path="aut", view=False):
 
     is_pga = isinstance(aut, PGA)
     for state in aut.states:
-        dot.node(node_id(state), shape="circle")
+        dot.node(node_id(state), label=node_id(state) if show_state_labels else "", shape="circle")
 
     if is_pga:
         for weight, state in aut.initial:

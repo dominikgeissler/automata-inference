@@ -282,10 +282,16 @@ class DFAFactory:
         """
         # We need to update the state names
         namespace = new_state_namespace()
-        state_map = {
-            state: State(namespace, index)
-            for index, state in enumerate(dfa.states)
-        }
+        if all(isinstance(state, State) for state in dfa.states):
+            state_map = {
+                state: State(namespace, state.index)
+                for state in dfa.states
+            }
+        else:
+            state_map = {
+                state: State(namespace, index)
+                for index, state in enumerate(sorted(dfa.states, key=str))
+            }
         return DFA(
             set(state_map.values()),
             {

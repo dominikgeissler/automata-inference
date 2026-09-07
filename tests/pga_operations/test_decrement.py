@@ -20,20 +20,22 @@ def to_product_state(left: int, right: int, right_namespace: int = 0):
 def test_decrement_no_change():
     """No transition with the requested indeterminate."""
     aut = create_pga(0, 1, [(0, 0, "Y", Rational(1, 2))], {(1, 0)}, {(1, 0)})
+    zero_namespace = current_state_namespace() + 3
     expected = PGA(
-        {State(0, 0), State(1, 0)},
+        {State(0, 0), State(zero_namespace, 0)},
         {Transition(State(0, 0), State(0, 0), "Y", Rational(1, 2))},
-        {(1, State(0, 0)), (1, State(1, 0))},
+        {(1, State(0, 0)), (1, State(zero_namespace, 0))},
         {(1, State(0, 0))},
     )
     assert_equal_pga(expected, aut.decrement("X"))
+    
 
 
 def test_decrement_no_branching():
     aut = create_pga(1, 2, [(0, 1, "X", Rational(1, 2))], [(1, 0)], [(2, 1)])
-    right_namespace = current_state_namespace() + 1
+    right_namespace = current_state_namespace() + 2
     # Shorthands for the states
-    # Note that the 'right' state has namespace '0' as we assume this to be dynamically assigned by the program
+    # The decrement guard allocates one namespace for the guard and one for its complement.
     p00 = to_product_state(0, 0, right_namespace)
     p11 = to_product_state(1, 1, right_namespace)
 
@@ -60,7 +62,7 @@ def test_decrement_multiple_branches():
         [(1, 1), (1, 3), (1, 5)],
     )
 
-    right_namespace = current_state_namespace() + 1
+    right_namespace = current_state_namespace() + 2
 
     p00 = to_product_state(0, 0, right_namespace)
     p11 = to_product_state(1, 1, right_namespace)
@@ -88,7 +90,7 @@ def test_decrement_self_loop():
         1, 1, [(0, 0, "Y", Rational(1, 2))], [(1, 0)], [(Rational(1, 2), 0)]
     )
 
-    right_namespace = current_state_namespace() + 1
+    right_namespace = current_state_namespace() + 2
 
     p00 = to_product_state(0, 0, right_namespace)
     p01 = to_product_state(0, 1, right_namespace)
