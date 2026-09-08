@@ -38,6 +38,7 @@ def main(
     print("----------------------------------")
     print()
 
+    print(f"Closed form of behavior: {out.get_behavior()}")
     if visualize_posterior:
         visualize(
             out,

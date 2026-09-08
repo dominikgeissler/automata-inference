@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from itertools import product
 
-from symengine import Matrix, Rational, eye
+from symengine import Matrix, Rational, S, eye
 
 # Ensures that automata have disjoint state sets
 _namespace_id = -1
@@ -439,6 +439,25 @@ class PGA(Automaton):
         for weight, state in self.final:
             arr[states.index(state)] = weight
         return arr
+    
+    def _construct_unmarginalized_transition_matrix(self, states: list[StateLike]):
+        arr = [[Rational(0, 1) for _ in range(len(states))] for _ in range(len(states))]
+        for transition in self.transition_matrix:
+            pos_source, pos_target = states.index(transition.source), states.index(transition.target)
+            arr[pos_source][pos_target] = transition.weight * S(transition.symbol) if transition.symbol else transition.weight
+        return arr
+    
+    def get_behavior(self):
+        """Computes the behavior of the automaton symbolically by solving a linear equation system."""
+        states = list(self.states)
+        # Construct the vectors and matrix
+        I = Matrix(self._construct_initial_weights_vector(states))
+        M = Matrix(self._construct_unmarginalized_transition_matrix(states))
+        F = Matrix(self._construct_final_weights_vector(states))
+        A_eq = eye(M.rows) - M
+        B = A_eq.LUsolve(F)
+        value = I.T @ B
+        return value[0]
 
     def get_probability_mass(self) -> Rational:
         """Computes the probability mass symbolically by solving a linear equation system."""
