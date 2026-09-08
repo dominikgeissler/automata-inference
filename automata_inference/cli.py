@@ -2,11 +2,6 @@ import sys
 import time
 from argparse import ArgumentParser
 
-from automata_inference.automata.factory import PGAFactory
-from automata_inference.parser.parser import parse
-from automata_inference.programs.handlers.statement_handler import StatementHandler
-from automata_inference.visualization.graphviz import visualize
-
 
 def main(
     program_path: str,
@@ -18,6 +13,13 @@ def main(
         program_path (str): The path to the program file to be analyzed.
         visualize_posterior (bool): Indicates whether the normalized posterior should be visually depicted.
     """
+    # Lazy imports: defer heavy module imports until runtime
+    from automata_inference.automata.factory import PGAFactory
+    from automata_inference.parser.parser import parse
+    from automata_inference.programs.handlers.statement_handler import (
+        StatementHandler,
+    )
+
     program = parse(program_path)
 
     print()
@@ -40,6 +42,9 @@ def main(
 
     print(f"Closed form of behavior: {out.get_behavior()}")
     if visualize_posterior:
+        # Lazy import graphviz only if visualization is requested
+        from automata_inference.visualization.graphviz import visualize
+
         visualize(
             out,
             view=True,

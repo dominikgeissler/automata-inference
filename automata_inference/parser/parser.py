@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 from functools import reduce
 
 from lark import Lark, Tree
-from symengine import Rational
 
 from automata_inference.parser.ast.distributions import (
     Bernoulli,
@@ -71,9 +72,19 @@ def parse_string(program: str) -> Program:
     Returns:
         Program: The parsed program.
     """
-    parser = Lark(get_grammar(), start="program")
+    parser = _get_parser()
     ast = parser.parse(program)
     return _parse_tree(ast)
+
+
+# Cache the Lark parser to avoid reparsing the grammar on every call.
+from functools import lru_cache
+
+
+@lru_cache(maxsize=1)
+def _get_parser() -> Lark:
+    """Return a cached Lark parser for the grammar."""
+    return Lark(get_grammar(), start="program")
 
 
 def _parse_tree(tree: Tree) -> Program:
@@ -180,9 +191,11 @@ def _parse_statement_while(tree: Tree, variables: set[str]):
     raise NotImplementedError("While currently not supported :(")
 
 
-def _parse_frac(tree: Tree) -> Rational:
+def _parse_frac(tree: Tree) -> "Rational":
     if int(str(tree.children[1])) == 0:
         raise ValueError("Division by 0.")
+    from symengine import Rational
+
     return Rational(tree.children[0], tree.children[1])
 
 

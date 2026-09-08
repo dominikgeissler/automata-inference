@@ -20,6 +20,7 @@ class State:
         index (int): The index of the state within its namespace.
     """
 
+    __slots__ = ("namespace", "index")
     namespace: int
     index: int
 
@@ -41,6 +42,7 @@ def current_state_namespace() -> int:
 
 @dataclass(frozen=True)
 class ProductState:
+    __slots__ = ("left", "right")
     left: StateLike
     right: StateLike
 
@@ -50,6 +52,7 @@ class ProductState:
 
 @dataclass(frozen=True)
 class IndexedState:
+    __slots__ = ("state", "index")
     state: StateLike
     index: int
 
