@@ -418,16 +418,7 @@ class PGA(Automaton):
         # Recombine the updated automaton with the part that only contains paths without any <indeterminate>-transition
         # Simple 'minimization': If subs_zero has no final states it is likely to be the 'zero'-PGA so we can ignore it
         return updated_filtered.weighted_union(subs_zero, 1, 1) if len(subs_zero.final) != 0 else updated_filtered
-
-    def _construct_marginalized_transition_matrix(self, states: list[StateLike]):
-        arr = [[Rational(0, 1) for _ in range(len(states))] for _ in range(len(states))]
-
-        for transition in self.transition_matrix:
-            pos_source, pos_target = states.index(transition.source), states.index(transition.target)
-            arr[pos_source][pos_target] = transition.weight
-
-        return arr
-
+    
     def _construct_initial_weights_vector(self, states: list[StateLike]) -> list[list[Rational]]:
         arr = [Rational(0, 1)] * len(states)
         for weight, state in self.initial:
@@ -440,11 +431,11 @@ class PGA(Automaton):
             arr[states.index(state)] = weight
         return arr
     
-    def _construct_unmarginalized_transition_matrix(self, states: list[StateLike]):
+    def _construct_transition_matrix(self, states: list[StateLike], marginalized: bool=False):
         arr = [[Rational(0, 1) for _ in range(len(states))] for _ in range(len(states))]
         for transition in self.transition_matrix:
             pos_source, pos_target = states.index(transition.source), states.index(transition.target)
-            arr[pos_source][pos_target] = transition.weight * S(transition.symbol) if transition.symbol else transition.weight
+            arr[pos_source][pos_target] = transition.weight * S(transition.symbol) if transition.symbol and not marginalized else transition.weight
         return arr
     
     def get_behavior(self):
@@ -452,7 +443,7 @@ class PGA(Automaton):
         states = list(self.states)
         # Construct the vectors and matrix
         I = Matrix(self._construct_initial_weights_vector(states))
-        M = Matrix(self._construct_unmarginalized_transition_matrix(states))
+        M = Matrix(self._construct_transition_matrix(states))
         F = Matrix(self._construct_final_weights_vector(states))
         A_eq = eye(M.rows) - M
         B = A_eq.LUsolve(F)
@@ -467,7 +458,7 @@ class PGA(Automaton):
         states = list(self.states)
         # Construct the vectors and matrix
         I = Matrix(self._construct_initial_weights_vector(states))
-        M = Matrix(self._construct_marginalized_transition_matrix(states))
+        M = Matrix(self._construct_transition_matrix(states, marginalized=True))
         F = Matrix(self._construct_final_weights_vector(states))
         A_eq = eye(M.rows) - M
         B = A_eq.LUsolve(F)
