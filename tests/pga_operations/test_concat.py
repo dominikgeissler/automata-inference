@@ -1,207 +1,137 @@
 from symengine import Rational
 
-from automata_inference.automata_factory import PGA
-from tests.utils import compare_dicts_with_unordered_lists
+from automata_inference.automata.model import PGA, State, Transition
+from tests.utils import AutomatonTestUtils
+
+make_pga = AutomatonTestUtils.create_pga
+assert_pgas_equal = AutomatonTestUtils.assert_equal_pga
 
 
 def test_concat_same_var():
     """Just some concatenation"""
-    aut1 = PGA(
-        {"q_0", "q_1"},
-        {"X": [(Rational(1, 1), "q_0", "q_1")]},
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_1")},
-    )
-    aut2 = PGA(
-        {"q_2", "q_3"},
-        {"X": [(Rational(1, 1), "q_2", "q_3")]},
-        {(Rational(1, 1), "q_2")},
-        {(Rational(1, 1), "q_3")},
-    )
+    aut1 = make_pga(1, 2, [(0, 1, "X", 1)], {(1, 0)}, {(1, 1)})
+    aut2 = make_pga(2, 2, [(0, 1, "X", 1)], {(1, 0)}, {(1, 1)})
     expected = PGA(
-        {"q_0", "q_1", "q_2", "q_3"},
-        {"X": [(Rational(1, 1), "q_0", "q_1"), (Rational(1, 1), "q_2", "q_3")], "1": [(Rational(1, 1), "q_1", "q_2")]},
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_3")},
+        {State(1, 0), State(1, 1), State(2, 0), State(2, 1)},
+        {
+            Transition(State(1, 0), State(1, 1), "X"),
+            Transition(State(2, 0), State(2, 1), "X"),
+            Transition(State(1, 1), State(2, 0)),
+        },
+        {(1, State(1, 0))},
+        {(1, State(2, 1))},
     )
-    actual = aut1.concat(aut2)
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    assert_pgas_equal(expected, aut1.concat(aut2))
 
 
 def test_concat_different_var():
     """Both automata have disjoint variables."""
-    aut1 = PGA(
-        {"q_0", "q_1"},
-        {"Y": [(Rational(1, 1), "q_0", "q_1")], "X": []},
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_1")},
-    )
-    aut2 = PGA(
-        {"q_2", "q_3"},
-        {"X": [(Rational(1, 1), "q_2", "q_3")], "Y": []},
-        {(Rational(1, 1), "q_2")},
-        {(Rational(1, 1), "q_3")},
-    )
+    aut1 = make_pga(1, 2, [(0, 1, "Y", 1)], {(1, 0)}, {(1, 1)})
+    aut2 = make_pga(2, 2, [(0, 1, "X", 1)], {(1, 0)}, {(1, 1)})
     expected = PGA(
-        {"q_0", "q_1", "q_2", "q_3"},
+        {State(1, 0), State(1, 1), State(2, 0), State(2, 1)},
         {
-            "X": [(Rational(1, 1), "q_2", "q_3")],
-            "Y": [(Rational(1, 1), "q_0", "q_1")],
-            "1": [(Rational(1, 1), "q_1", "q_2")],
+            Transition(State(1, 0), State(1, 1), "Y"),
+            Transition(State(2, 0), State(2, 1), "X"),
+            Transition(State(1, 1), State(2, 0)),
         },
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_3")},
+        {(1, State(1, 0))},
+        {(1, State(2, 1))},
     )
-    actual = aut1.concat(aut2)
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    assert_pgas_equal(expected, aut1.concat(aut2))
 
 
 def test_concat_multiple_final_states_first():
     """First automaton has multiple final states"""
-    aut1 = PGA(
-        {"q_0", "q_1", "q_2"},
-        {"Y": [(Rational(1, 2), "q_0", "q_1")], "X": [(Rational(1, 2), "q_0", "q_2")]},
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_1"), (Rational(1, 1), "q_2")},
+    aut1 = make_pga(
+        1,
+        3,
+        [(0, 1, "Y", Rational(1, 2)), (0, 2, "X", Rational(1, 2))],
+        {(1, 0)},
+        {(1, 1), (1, 2)},
     )
-    aut2 = PGA(
-        {"q_3", "q_4"},
-        {"X": [(Rational(1, 1), "q_3", "q_4")], "Y": []},
-        {(Rational(1, 1), "q_3")},
-        {(Rational(1, 1), "q_4")},
-    )
-
+    aut2 = make_pga(2, 2, [(0, 1, "X", 1)], {(1, 0)}, {(1, 1)})
     expected = PGA(
-        {f"q_{i}" for i in range(5)},
+        {State(1, 0), State(1, 1), State(1, 2), State(2, 0), State(2, 1)},
         {
-            "X": [(Rational(1, 2), "q_0", "q_2"), (Rational(1, 1), "q_3", "q_4")],
-            "Y": [(Rational(1, 2), "q_0", "q_1")],
-            "1": [(Rational(1, 1), "q_1", "q_3"), (Rational(1, 1), "q_2", "q_3")],
+            Transition(State(1, 0), State(1, 1), "Y", Rational(1, 2)),
+            Transition(State(1, 0), State(1, 2), "X", Rational(1, 2)),
+            Transition(State(2, 0), State(2, 1), "X"),
+            Transition(State(1, 1), State(2, 0)),
+            Transition(State(1, 2), State(2, 0)),
         },
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_4")},
+        {(1, State(1, 0))},
+        {(1, State(2, 1))},
     )
-
-    actual = aut1.concat(aut2)
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    assert_pgas_equal(expected, aut1.concat(aut2))
 
 
 def test_concat_multiple_final_states_last():
     """Last automaton has multiple final states"""
-    aut1 = PGA(
-        {"q_0", "q_1"},
-        {"X": [(Rational(1, 1), "q_0", "q_1")], "Y": []},
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_1")},
+    aut1 = make_pga(1, 2, [(0, 1, "X", 1)], {(1, 0)}, {(1, 1)})
+    aut2 = make_pga(
+        2,
+        3,
+        [(0, 1, "Y", Rational(1, 2)), (0, 2, "X", Rational(1, 2))],
+        {(1, 0)},
+        {(1, 1), (1, 2)},
     )
-    aut2 = PGA(
-        {"q_2", "q_3", "q_4"},
-        {"Y": [(Rational(1, 2), "q_2", "q_3")], "X": [(Rational(1, 2), "q_2", "q_4")]},
-        {(Rational(1, 1), "q_2")},
-        {(Rational(1, 1), "q_3"), (Rational(1, 1), "q_4")},
-    )
-
     expected = PGA(
-        {f"q_{i}" for i in range(5)},
+        {State(1, 0), State(1, 1), State(2, 0), State(2, 1), State(2, 2)},
         {
-            "X": [(Rational(1, 1), "q_0", "q_1"), (Rational(1, 2), "q_2", "q_4")],
-            "Y": [(Rational(1, 2), "q_2", "q_3")],
-            "1": [(Rational(1, 1), "q_1", "q_2")],
+            Transition(State(1, 0), State(1, 1), "X"),
+            Transition(State(2, 0), State(2, 1), "Y", Rational(1, 2)),
+            Transition(State(2, 0), State(2, 2), "X", Rational(1, 2)),
+            Transition(State(1, 1), State(2, 0)),
         },
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_3"), (Rational(1, 1), "q_4")},
+        {(1, State(1, 0))},
+        {(1, State(2, 1)), (1, State(2, 2))},
     )
-
-    actual = aut1.concat(aut2)
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    assert_pgas_equal(expected, aut1.concat(aut2))
 
 
 def test_concat_multiple_initial_states_first():
     """First automaton has multiple initial states."""
-    aut1 = PGA(
-        {"q_0", "q_1", "q_2"},
-        {"X": [(Rational(1, 2), "q_0", "q_2"), (Rational(1, 2), "q_1", "q_2")]},
-        {(Rational(1, 1), "q_0"), (Rational(1, 1), "q_1")},
-        {(Rational(1, 1), "q_2")},
+    aut1 = make_pga(
+        1,
+        3,
+        [(0, 2, "X", Rational(1, 2)), (1, 2, "X", Rational(1, 2))],
+        {(1, 0), (1, 1)},
+        {(1, 2)},
     )
-
-    aut2 = PGA({"q_3"}, {"X": []}, {(Rational(1, 1), "q_3")}, {(Rational(1, 1), "q_3")})
-
+    aut2 = make_pga(2, 1, [], {(1, 0)}, {(1, 0)})
     expected = PGA(
-        {f"q_{i}" for i in range(4)},
-        {"X": [(Rational(1, 2), "q_0", "q_2"), (Rational(1, 2), "q_1", "q_2")], "1": [(Rational(1, 1), "q_2", "q_3")]},
-        {(Rational(1, 1), "q_0"), (Rational(1, 1), "q_1")},
-        {(Rational(1, 1), "q_3")},
+        {State(1, 0), State(1, 1), State(1, 2), State(2, 0)},
+        {
+            Transition(State(1, 0), State(1, 2), "X", Rational(1, 2)),
+            Transition(State(1, 1), State(1, 2), "X", Rational(1, 2)),
+            Transition(State(1, 2), State(2, 0)),
+        },
+        {(1, State(1, 0)), (1, State(1, 1))},
+        {(1, State(2, 0))},
     )
-
-    actual = aut1.concat(aut2)
-
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    assert_pgas_equal(expected, aut1.concat(aut2))
 
 
 def test_concat_multiple_initial_states_last():
     """Last automaton has multiple initial states."""
-    aut1 = PGA({"q_0"}, {"X": []}, {(Rational(1, 1), "q_0")}, {(Rational(1, 1), "q_0")})
-
-    aut2 = PGA(
-        {"q_1", "q_2", "q_3"},
-        {"X": [(Rational(1, 2), "q_1", "q_3"), (Rational(1, 2), "q_2", "q_3")]},
-        {(Rational(1, 1), "q_1"), (Rational(1, 1), "q_2")},
-        {(Rational(1, 1), "q_3")},
+    aut1 = make_pga(1, 1, [], {(1, 0)}, {(1, 0)})
+    aut2 = make_pga(
+        2,
+        3,
+        [(0, 2, "X", Rational(1, 2)), (1, 2, "X", Rational(1, 2))],
+        {(1, 0), (1, 1)},
+        {(1, 2)},
     )
-
     expected = PGA(
-        {f"q_{i}" for i in range(4)},
+        {State(1, 0), State(2, 0), State(2, 1), State(2, 2)},
         {
-            "X": [(Rational(1, 2), "q_1", "q_3"), (Rational(1, 2), "q_2", "q_3")],
-            "1": [(Rational(1, 1), "q_0", "q_1"), (Rational(1, 1), "q_0", "q_2")],
+            Transition(State(2, 0), State(2, 2), "X", Rational(1, 2)),
+            Transition(State(2, 1), State(2, 2), "X", Rational(1, 2)),
+            Transition(State(1, 0), State(2, 0)),
+            Transition(State(1, 0), State(2, 1)),
         },
-        {(Rational(1, 1), "q_0")},
-        {(Rational(1, 1), "q_3")},
+        {(1, State(1, 0))},
+        {(1, State(2, 2))},
     )
-
-    actual = aut1.concat(aut2)
-
-    assert expected.states == actual.states, f"States do not match, expected {expected.states}, got {actual.states}"
-    assert expected.initial == actual.initial, (
-        f"Initial states do not match, expected {expected.initial}, got {actual.initial}"
-    )
-    assert expected.final == actual.final, f"Final states do not match, expected {expected.final}, got {actual.final}"
-    assert compare_dicts_with_unordered_lists(expected.transition_matrix, actual.transition_matrix), (
-        f"Transition matrices do not match, expected {expected.transition_matrix}, got {actual.transition_matrix}"
-    )
+    assert_pgas_equal(expected, aut1.concat(aut2))

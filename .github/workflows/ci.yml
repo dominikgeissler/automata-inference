@@ -23,6 +23,9 @@ jobs:
       - name: linting
         run: |
           poetry run pylint automata_inference
+      - name: ruff
+        run: |
+          poetry run ruff check automata_inference
       - name: mypy
         run: |
           poetry run mypy automata_inference

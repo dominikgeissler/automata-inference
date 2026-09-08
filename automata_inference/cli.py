@@ -1,13 +1,17 @@
-import time
-
-from argparse import ArgumentParser
 import sys
-from automata_inference.automata_factory import PGAFactory
+import time
+from argparse import ArgumentParser
+
+from automata_inference.automata.factory import PGAFactory
 from automata_inference.parser.parser import parse
-from automata_inference.visualizer import visualize
+from automata_inference.programs.handlers.statement_handler import StatementHandler
+from automata_inference.visualization.graphviz import visualize
 
 
-def main(program_path: str, visualize_posterior: bool):
+def main(
+    program_path: str,
+    visualize_posterior: bool,
+):
     """Main method of the program.
 
     Args:
@@ -22,9 +26,11 @@ def main(program_path: str, visualize_posterior: bool):
     print("----------------------------------")
     print()
 
-    input_pga = PGAFactory.one((program.variables | {"1"}))
+    input_pga = PGAFactory.one()
+    statement_handler = StatementHandler(program.variables)
     start = time.time()
-    out = program.apply_semantics(input_pga)
+    out = statement_handler.compile_program(program, input_pga)
+
     print()
     print("----------------------------------")
     print("-       Finished Analysis        -")
@@ -32,10 +38,13 @@ def main(program_path: str, visualize_posterior: bool):
     print("----------------------------------")
     print()
 
-    if program.query:
-        print(f"Output of '{program.query}': {program.evaluate_query(out)}")
+    print(f"Closed form of behavior: {out.get_behavior()}")
     if visualize_posterior:
-        visualize(out, view=True)
+        visualize(
+            out,
+            view=True,
+            show_state_labels=False,  # can be changed later for debug or sth like that
+        )
 
 
 def create_parser():
@@ -49,7 +58,6 @@ def create_parser():
         action="store_true",
         help="If set, renders the automaton representation of the normalized posterior distribution.",
     )
-
     return argument_parser
 
 
